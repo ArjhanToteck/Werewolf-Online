@@ -1,0 +1,68 @@
+<head>
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-68J35F2R6N"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+
+		function gtag() {
+			dataLayer.push(arguments);
+		}
+		gtag('js', new Date());
+
+		gtag('config', 'G-68J35F2R6N');
+	</script>
+
+	<style>
+		button {
+			height: 25;
+			width: 105;
+		}
+
+		input {
+			height: 25;
+		}
+	</style>
+	<title>Werewolf | ArjhanToteck</title>
+	<link rel="icon" href="/favicon.png">
+	<link href="https://arjhantoteck.vercel.app/style.css" rel="stylesheet" type="text/css" media="all">
+</head>
+
+<body>
+	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
+	<button onclick="startGame()">Host Game</button>
+	<button onclick="joinGame()">Join Game</button>
+</body>
+
+<script>
+const server = "https://werewolf.arjhantoteck.repl.co/";
+
+function startGame() {
+	// creates game and gets code
+	fetch(`${server}startGame/`)
+		.then(response => {
+			if (response.ok) return response.text()
+			throw new Error('Network response was not ok.')
+		})
+		.then(function(code){
+
+			// sets code
+			document.cookie = `code=${code}; ; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
+
+			// joins game
+			console.log(code);
+			joinGame(code, prompt("name"), false);
+		});
+}
+
+function joinGame(code, name, spectator) {
+	fetch(`${server}joinGame/${code}/${name}/${spectator}`)
+		.then(response => {
+			if (response.ok) return response.text()
+			throw new Error('Network response was not ok.')
+		})
+		.then(function(data){
+
+			console.log(data);
+		});
+}
+</script>
