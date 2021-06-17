@@ -1,17 +1,4 @@
 <head>
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-68J35F2R6N"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-
-		function gtag() {
-			dataLayer.push(arguments);
-		}
-		gtag('js', new Date());
-
-		gtag('config', 'G-68J35F2R6N');
-	</script>
-
 	<style>
 		button {
 			height: 25;
@@ -34,11 +21,12 @@
 </body>
 
 <script>
-const server = "https://werewolf.arjhantoteck.repl.co/";
+const server = "werewolf.arjhantoteck.repl.co";
+let connection;
 
 function startGame() {
 	// creates game and gets code
-	fetch(`${server}startGame/`)
+	fetch(`https://${server}/startGame/`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
 			throw new Error('Network response was not ok.')
@@ -46,7 +34,7 @@ function startGame() {
 		.then(function(code){
 
 			// sets code
-			document.cookie = `code=${code}; ; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
+			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
 
 			// joins game
 			console.log(code);
@@ -55,14 +43,16 @@ function startGame() {
 }
 
 function joinGame(code, name, spectator) {
-	fetch(`${server}joinGame/${code}/${name}/${spectator}`)
+	fetch(`https://${server}/joinGame/${code}/${name}/${spectator}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
 			throw new Error('Network response was not ok.')
 		})
-		.then(function(data){
+		.then(function(password){
+			document.cookie = `password=${password}`;
 
-			console.log(data);
+			connection = new WebSocket(`wss://${server}`);
+			connection.send("hello world");
 		});
 }
 </script>
