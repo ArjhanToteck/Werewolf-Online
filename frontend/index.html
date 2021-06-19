@@ -15,13 +15,16 @@
 </head>
 
 <body>
+	<div id="menu">
 	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
 	<button onclick="startGame()">Host Game</button>
 	<button onclick="joinGame()">Join Game</button>
+	</div>
 </body>
 
 <script>
 const server = "werewolf.arjhantoteck.repl.co";
+let password;
 let connection;
 
 function startGame() {
@@ -46,13 +49,20 @@ function joinGame(code, name, spectator) {
 	fetch(`https://${server}/joinGame/${code}/${name}/${spectator}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
-			throw new Error('Network response was not ok.')
+			throw new Error("Network response was not ok.")
 		})
-		.then(function(password){
-			document.cookie = `password=${password}`;
+		.then(function(data){
+			document.cookie = `password=${data}`;
+			password = data;
 
+			// establishes connection to server
 			connection = new WebSocket(`wss://${server}`);
-			connection.send("hello world");
+
+			// waits until connection opened
+			connection.addEventListener("open", function (event) {
+				console.log("opened");
+				connection.send(JSON.stringify({password: password, code: code, action: "linkConnection"}));
+			});
 		});
 }
 </script>
