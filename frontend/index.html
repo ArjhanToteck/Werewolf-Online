@@ -33,6 +33,7 @@
 <script>
 const server = "werewolf.arjhantoteck.repl.co";
 let password;
+let gameCode;
 let connection;
 
 function startGame() {
@@ -46,7 +47,8 @@ function startGame() {
 
 			// sets code
 			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
-
+			gameCode = code;
+		
 			// joins game
 			console.log(code);
 			joinGame(code);
@@ -72,5 +74,9 @@ function joinGame(code = prompt("code"), name = prompt("name"), spectator = fals
 				connection.send(JSON.stringify({password: password, code: code, action: "linkConnection"}));
 			});
 		});
+}
+
+function sendMessage(){
+	connection.send(JSON.stringify({password: password, code: gameCode, action: "sendMessage", message: chatInput.value}));
 }
 </script>
