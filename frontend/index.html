@@ -16,9 +16,17 @@
 
 <body>
 	<div id="menu">
-	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
-	<button onclick="startGame()">Host Game</button>
-	<button onclick="joinGame()">Join Game</button>
+		<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
+		<button onclick="startGame()">Host Game</button>
+		<button onclick="joinGame()">Join Game</button>
+	</div>
+	<div id="game" style="display:none;">
+		<div id="chat"> </div>
+		<br>
+		<div id="chatInput">
+			<input size="35" autocomplete="off" placeholder="Message" autofocus id="messageBox">
+			<button onclick="sendMessage()">Send</button>
+		</div>
 	</div>
 </body>
 
@@ -41,11 +49,11 @@ function startGame() {
 
 			// joins game
 			console.log(code);
-			joinGame(code, prompt("name"), false);
+			joinGame(code);
 		});
 }
 
-function joinGame(code, name, spectator) {
+function joinGame(code = prompt("code"), name = prompt("name"), spectator = false) {
 	fetch(`https://${server}/joinGame/${code}/${name}/${spectator}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
@@ -55,7 +63,7 @@ function joinGame(code, name, spectator) {
 			document.cookie = `password=${data}`;
 			password = data;
 
-			// establishes connection to server
+			// establishes connection with websocket server
 			connection = new WebSocket(`wss://${server}`);
 
 			// waits until connection opened
