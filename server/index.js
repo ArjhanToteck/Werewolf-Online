@@ -3,7 +3,7 @@ const WebSocketServer = require("websocket").server;
 
 const Game = require("./Game.js").Game;
 const Player = require("./Player.js").Player;
-let test;
+const Chat = require("./Chat.js").Chat;
 
 // replace this with front end domain
 const frontend = "https://null.jsbin.com";
@@ -80,7 +80,6 @@ wsServer = new WebSocketServer({
 });
 
 wsServer.on("request", function(request) {
-	console.log(request.resourceURL.query);
 	// checks if origin matches
 	if (request.origin.indexOf(frontend) == -1) {
 		// rejects bad request
@@ -90,24 +89,40 @@ wsServer.on("request", function(request) {
 		const connection = request.accept(null, request.origin);
 
 		// listens for connection to game
-		connection.on("message", function(message) {
-			test = message;
+		connection.on("message", function(data) {
+        if (verifyMessage(data)) {
+					const message = JSON.parse(data.utf8Data);
 
-        if (message.type == "utf8") {
-					// parses message
-          const data = JSON.parse(message.utf8Data);
+					const game = Game.games[Game.codes.indexOf(message.code)];
+					let player = game.players[game.passwords.indexOf(message.password)];
 
-					// checks if message is to link player and game is valid
-					if(data.action == "linkConnection" && Game.codes.includes(data.code)){
-						const game = Game.games[Game.codes.indexOf(data.code)];
+					// checks if connection is in player object
+					console.log(player.connections);
+					if(player.connections.includes(connection) == false){
 
-						// checks if password is valid
-						if(game.passwords.includes(data.password)){
-							let player = game.players[game.passwords.indexOf(data.password)];
+						// adds connection to player
+						player.connections.push(connection);
+						connection.player = player;
+						game.connections.push(connection);
 
-							// links connection to player with matching password
-							player.linkConnection(connection);
-						}
+						// chat send message event
+						player.onMessageEvents.push(function(message){
+							// checks if action is sendMessage and valid message is sent
+							if(message.action == "sendMessage" && typeof(message.message) == "string"){
+								const chatMessage = {sender: player.name, date: new Date(), contents: message.message};
+
+								player.game.chat.push(chatMessage);
+
+								for(var i = 0; i < game.connections.length; i++){
+									game.connections[i].sendUTF(JSON.stringify({action: "recieveMessage", messages: [chatMessage]}));
+								}
+							}
+						});
+					}
+
+					// calls all onMessageEvents in player
+					for(var i = 0; i < player.onMessageEvents.length; i++){
+						player.onMessageEvents[i](message);
 					}
         }
 		});
@@ -121,11 +136,31 @@ function startGame() {
 }
 
 function joinGame(code, name, spectator) {
-	console.log(Game.codes);
 	const index = Game.codes.indexOf(code);
 	if(index == -1){
 		return false;
 	} else {
 		return Game.games[index].join(name, spectator);
+	}
+}
+
+function verifyMessage(data) {
+	if (data.type == "utf8") {
+		// parses message
+		const message = JSON.parse(data.utf8Data);
+
+		// checks if message is to link player and game is valid
+		if (Game.codes.includes(message.code)) {
+			const game = Game.games[Game.codes.indexOf(message.code)];
+
+			// checks if password is valid
+			if (game.passwords.includes(message.password)) {
+				let player = game.players[game.passwords.indexOf(message.password)];
+
+				return true
+			}
+		}
+
+		return false;
 	}
 }
