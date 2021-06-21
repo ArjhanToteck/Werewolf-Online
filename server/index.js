@@ -26,16 +26,19 @@ let server = http.createServer(function(req, res) {
 
 			switch (action) {
 				case "startGame":
-					res.writeHead(200, headers);
+					if(req.url.split("/").length == 3){
+						res.writeHead(200, headers);
 
-					res.end(startGame());
-
-					break;
+						res.end(JSON.stringify(startGame(decodeURI(req.url.split("/")[2]))));
+					} else {
+						res.end("Name missing\n");
+					}
+				break;
 
 				case "joinGame":
 					if(req.url.split("/").length == 5){
 						// attempts to join game
-						const response = joinGame(req.url.split("/")[2], req.url.split("/")[3] , req.url.split("/")[4]);
+						const response = joinGame(decodeURI(req.url.split("/")[2]), decodeURI(req.url.split("/")[3]), decodeURI(req.url.split("/")[4]));
 
 						// invalid code
 						if(response == false){
@@ -97,19 +100,21 @@ wsServer.on("request", function(request) {
 					let player = game.players[game.passwords.indexOf(message.password)];
 
 					// checks if connection is in player object
-					console.log(player.connections);
 					if(player.connections.includes(connection) == false){
 
 						// adds connection to player
 						player.connections.push(connection);
 						connection.player = player;
 						game.connections.push(connection);
+						
+						// sends current chat to player
+						connection.sendUTF(JSON.stringify({action: "recieveMessage", messages: game.chat}));
 
 						// chat send message event
 						player.onMessageEvents.push(function(message){
 							// checks if action is sendMessage and valid message is sent
 							if(message.action == "sendMessage" && typeof(message.message) == "string"){
-								const chatMessage = {sender: player.name, date: new Date(), contents: message.message};
+								const chatMessage = {sender: player.name, date: new Date().toString(), contents: message.message};
 
 								player.game.chat.push(chatMessage);
 
@@ -129,18 +134,36 @@ wsServer.on("request", function(request) {
 	}
 });
 
-function startGame() {
+function startGame(name) {
+	// creates new game
 	let newGame = new Game();
+	
+	// creates new player 
+	let player = newGame.join(name, false);
 
-	return newGame.code;
+	// game creation message
+	newGame.chat.push({sender: "Moderator", date: new Date().toString(), contents: `${player.name} has created the game lobby.`});
+
+	// returns new game's code and password of new player
+	return {code: newGame.code, password: player.password};
 }
 
 function joinGame(code, name, spectator) {
+	// gets index of code
 	const index = Game.codes.indexOf(code);
+
+	// makes sure code is valid
 	if(index == -1){
 		return false;
 	} else {
-		return Game.games[index].join(name, spectator);
+		// joins game and returns new player password
+		let player = Game.games[index].join(name, spectator);
+
+		// message that they joined the game
+		Game.games[index].chat.push({sender: "Moderator", date: new Date().toString(), contents: `${player.name} has joined the game.`});
+
+		// returns password
+		return player.password;
 	}
 }
 
@@ -157,7 +180,7 @@ function verifyMessage(data) {
 			if (game.passwords.includes(message.password)) {
 				let player = game.players[game.passwords.indexOf(message.password)];
 
-				return true
+				return true;
 			}
 		}
 
