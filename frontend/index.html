@@ -35,6 +35,7 @@ const server = "werewolf.arjhantoteck.repl.co";
 let password;
 let gameCode;
 let connection;
+let test;
 
 function startGame() {
 	// creates game and gets code
@@ -45,10 +46,6 @@ function startGame() {
 		})
 		.then(function(code){
 
-			// sets code
-			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
-			gameCode = code;
-		
 			// joins game
 			console.log(code);
 			joinGame(code);
@@ -62,21 +59,47 @@ function joinGame(code = prompt("code"), name = prompt("name"), spectator = fals
 			throw new Error("Network response was not ok.")
 		})
 		.then(function(data){
+			// sets password
 			document.cookie = `password=${data}`;
 			password = data;
 
-			// establishes connection with websocket server
-			connection = new WebSocket(`wss://${server}`);
+			// sets code
+			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
+			gameCode = code;
 
-			// waits until connection opened
-			connection.addEventListener("open", function (event) {
-				console.log("opened");
-				connection.send(JSON.stringify({password: password, code: code, action: "linkConnection"}));
-			});
+			// shows game
+			menu.style.display = "none";
+			game.style.display = "block";
+
+			setUpConnection();
 		});
 }
 
+function setUpConnection(){
+	// establishes connection with websocket server
+	connection = new WebSocket(`wss://${server}`);
+
+	// waits until connection opened
+	connection.addEventListener("open", function (event) {
+		console.log("opened");
+		connection.send(JSON.stringify({password: password, code: gameCode, action: "linkConnection"}));
+	});
+
+	// recieve messages
+	connection.addEventListener("message", function (event) {
+    const message = JSON.parse(event.data);
+
+		if(message.action == "recieveMessage"){
+			// loops through every sent message
+			for(var i = 0; i < message.messages.length; i++){
+				// shows each message
+				chat.innerHTML += `<span style="background-color: white; color: black">${message.messages[i].sender}</span><br>${message.messages[i].contents}<br><br>`;
+			}
+		}
+	});
+}
+
 function sendMessage(){
-	connection.send(JSON.stringify({password: password, code: gameCode, action: "sendMessage", message: chatInput.value}));
+	connection.send(JSON.stringify({password: password, code: gameCode, action: "sendMessage", message: messageBox.value}));
 }
 </script>
