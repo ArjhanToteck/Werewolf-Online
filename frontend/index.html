@@ -37,26 +37,60 @@ let gameCode;
 let connection;
 let test;
 
-function startGame() {
+function startGame(name = undefined) {
+	if(!name){
+		name = prompt("Enter your username.");
+		while (name.includes("/")){
+			name = prompt("Your name may not contain a slash.");
+		}
+	}
+
 	// creates game and gets code
-	fetch(`https://${server}/startGame/`, {method: "POST"})
-		.then(response => {
-			if (response.ok) return response.text()
-			throw new Error('Network response was not ok.')
-		})
-		.then(function(code){
-
-			// joins game
-			console.log(code);
-			joinGame(code);
-		});
-}
-
-function joinGame(code = prompt("code"), name = prompt("name"), spectator = false) {
-	fetch(`https://${server}/joinGame/${code}/${name}/${spectator}`, {method: "POST"})
+	fetch(`https://${server}/startGame/${name}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
 			throw new Error("Network response was not ok.")
+			alert("Network error.")
+		})
+		.then(function(data){
+			const parsedData = JSON.parse(data);
+
+			// sets password
+			document.cookie = `password=${parsedData.password}`;
+			password = parsedData.password;
+
+			// sets code
+			document.cookie = `code=${parsedData.code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
+			gameCode = parsedData.code;
+
+			// shows game
+			menu.style.display = "none";
+			game.style.display = "block";
+
+			// adds enter key event listener
+			document.addEventListener('keydown', function(event){
+				if(event.key == "Enter"){
+					sendMessage();
+				}
+			});
+
+			setUpConnection();
+		});
+}
+
+function joinGame(code = prompt("code"), name = undefined, spectator = false) {
+	if(!name){
+		name = prompt("Enter your username.");
+		while (name.includes("/")){
+			name = prompt("Your name may not contain a slash.");
+		}
+	}
+
+	fetch(`https://${server}/joinGame/${code}/${name}/${spectator}`, {method: "POST"})
+		.then(response => {
+			if (response.ok) return response.text()
+			alert("Game code is invalid or there is a network error.")
+			throw new Error("Network response was not ok.");
 		})
 		.then(function(data){
 			// sets password
