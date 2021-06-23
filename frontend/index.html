@@ -149,8 +149,18 @@ function handleWebSocketMessage(message){
 				let dateString = `${date.getMonth()}/${date.getDate()}/${date.getYear()}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes().toString().length == 2 ? date.getMinutes() : "0" + date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
 
 				// shows each message
-				chat.innerHTML += `<span style="background-color: white; color: #262626">${message.messages[i].sender} (${dateString})</span><br>${message.messages[i].contents}<br><br>`;
+				messageElement = document.createElement("div");
+				messageElement.innerHTML = `<span style="background-color: white; color: #262626">NAME (DATE)</span><br><span>MESSAGE</span><br><br>`;
+				messageElement.childNodes[0].innerText = `${message.messages[i].sender} (${dateString})`;
+				messageElement.childNodes[2].innerText = `${message.messages[i].contents}`;
+
+				chat.appendChild(messageElement);
 			}
+		break;
+
+		// clears chat
+		case "clearChat":
+			chat.innerHTML = "";
 		break;
 
 		// game closes
