@@ -3,7 +3,6 @@ const WebSocketServer = require("websocket").server;
 
 const Game = require("./Game.js").Game;
 const Player = require("./Player.js").Player;
-const Chat = require("./Chat.js").Chat;
 
 // replace this with front end domain
 const frontend = "https://null.jsbin.com";
@@ -109,25 +108,11 @@ wsServer.on("request", function(request) {
 						
 						// sends current chat to player
 						connection.sendUTF(JSON.stringify({action: "recieveMessage", messages: game.chat}));
-
-						// chat send message event
-						player.onMessageEvents.push(function(message){
-							// checks if action is sendMessage and valid message is sent
-							if(message.action == "sendMessage" && typeof(message.message) == "string"){
-								const chatMessage = {sender: player.name, date: new Date().toString(), contents: message.message};
-
-								player.game.chat.push(chatMessage);
-
-								for(var i = 0; i < game.connections.length; i++){
-									game.connections[i].sendUTF(JSON.stringify({action: "recieveMessage", messages: [chatMessage]}));
-								}
-							}
-						});
 					}
 
 					// calls all onMessageEvents in player
-					for(var i = 0; i < player.onMessageEvents.length; i++){
-						player.onMessageEvents[i](message);
+					for(let i = 0; i < player.onMessageEvents.length; i++){
+						player.onMessageEvents[i](message, player);
 					}
         }
 		});
@@ -140,9 +125,10 @@ function startGame(name) {
 	
 	// creates new player 
 	let player = newGame.join(name, false);
+	player.host = true;
 
 	// game creation message
-	newGame.chat.push({sender: "Moderator", date: new Date().toString(), contents: `${player.name} has created the game lobby.`});
+	newGame.sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has started the game. Use <c>!help</c>`}]});
 
 	// returns new game's code and password of new player
 	return {code: newGame.code, password: player.password};
@@ -160,7 +146,7 @@ function joinGame(code, name, spectator) {
 		let player = Game.games[index].join(name, spectator);
 
 		// message that they joined the game
-		Game.games[index].chat.push({sender: "Moderator", date: new Date().toString(), contents: `${player.name} has joined the game.`});
+		Game.games[index].sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has joined the game.`}]});
 
 		// returns password
 		return player.password;

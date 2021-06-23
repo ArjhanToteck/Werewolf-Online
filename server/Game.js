@@ -29,22 +29,53 @@ function Game(){
 
 	// passwords
   this.passwords = [];
+	
+	// connections
+	this.connections = [];
+
+	// chat
+	this.chat = [];
+
+	// inGame
+	this.inGame = false;
+
+	// dayPhase
+	this.dayPhase = {phase: "gameNotStarted", timeStarted: new Date()};
 
 	// join function
   this.join = function(name, spectator){
 		let player = new Player(name, this, spectator);
+		player.game = this;
 		this.players.push(player);
 		this.passwords.push(player.password);
 
-		return player.password;
+		return player;
   }
 
-	// chat
-	this.chat = [];
-}
+		// start game function
+	this.startGame = function(player){
+		this.inGame = true;
+		this.dayPhase = {phase: "day", timeStarted: new Date()};
+		this.chat = [];
+		this.sendMessage({action: "clearChat"});
+		this.sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has started the game.`}]})
+	}
 
-function Message(sender, content){
-	this.sender = sender;
-	this.time = new Date();
-	this.content = content;
+	this.sendMessage = function(message){
+		// loops through all websockets
+		for(let i = 0; i < this.connections.length; i++){
+			// sends message to close game
+			this.connections[i].sendUTF(JSON.stringify(message));
+		}
+
+		// adds message to chat list if applicable
+		if(message.action == "recieveMessage"){
+			this.chat = this.chat.concat(message.messages);
+		}
+	}
+
+	// closes game if inactive
+	setTimeout(() => {
+		this.sendMessage({action: "gameClosed", message: "This game was closed since it has been open for 15 minutes without starting."});
+	}, 900000); // 900000 milliseconds = 15 minutes
 }
