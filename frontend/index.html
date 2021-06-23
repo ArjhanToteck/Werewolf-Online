@@ -126,26 +126,39 @@ function setUpConnection(){
 		connection.send(JSON.stringify({password: password, code: gameCode, action: "linkConnection"}));
 	});
 
-	// recieve messages
+	// recieve websocket messages
 	connection.addEventListener("message", function (event) {
     const message = JSON.parse(event.data);
-
-		if(message.action == "recieveMessage"){
-			// loops through every sent message
-			for(var i = 0; i < message.messages.length; i++){
-				// parses date
-				let date = new Date(message.messages[i].date);
-				let dateString = `${date.getMonth()}/${date.getDate()}/${date.getYear()}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
-
-				// shows each message
-				chat.innerHTML += `<span style="background-color: white; color: #262626">${message.messages[i].sender} (${dateString})</span><br>${message.messages[i].contents}<br><br>`;
-			}
-		}
+		handleWebSocketMessage(message);
 	});
 }
 
 function sendMessage(){
 	connection.send(JSON.stringify({password: password, code: gameCode, action: "sendMessage", date: new Date().toUTCString(), message: messageBox.value}));
 	messageBox.value = "";
+}
+
+function handleWebSocketMessage(message){
+	console.log(message);
+	switch(message.action){
+		// recieves chat message
+		case "recieveMessage":
+			// loops through every sent message
+			for(var i = 0; i < message.messages.length; i++){
+				// parses date
+				let date = new Date(message.messages[i].date);
+				let dateString = `${date.getMonth()}/${date.getDate()}/${date.getYear()}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes().toString().length == 2 ? date.getMinutes() : "0" + date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
+
+				// shows each message
+				chat.innerHTML += `<span style="background-color: white; color: #262626">${message.messages[i].sender} (${dateString})</span><br>${message.messages[i].contents}<br><br>`;
+			}
+		break;
+
+		// game closes
+		case "gameClosed":
+			alert(message.message);
+			location.reload;
+		break;
+	}
 }
 </script>
