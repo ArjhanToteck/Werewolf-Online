@@ -40,14 +40,10 @@ let test;
 function startGame(name = undefined) {
 	if(!name){
 		name = prompt("Enter your username.");
-
-		while (name.includes("/")){
-			name = prompt("Your name may not contain a slash.");
-		}
 	}
 
 	// creates game and gets code
-	fetch(`https://${server}/startGame/${encodeURIComponent(name)}`, {method: "POST"})
+	fetch(`https://${server}/startGame?name=${encodeURIComponent(name)}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
 			throw new Error("Network response was not ok.")
@@ -79,16 +75,12 @@ function startGame(name = undefined) {
 		});
 }
 
-function joinGame(code = prompt("code"), name = undefined, spectator = false) {
+function joinGame(code = prompt("code"), name = undefined) {
 	if(!name){
 		name = prompt("Enter your username.");
-
-		while (name.includes("/")){
-			name = prompt("Your name may not contain a slash.");
-		}
 	}
 
-	fetch(`https://${server}/joinGame/${code}/${encodeURIComponent(name)}/${spectator}`, {method: "POST"})
+	fetch(`https://${server}/joinGame?code=${code}&name=${encodeURIComponent(name)}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
 			alert("Game code is invalid or there is a network error.")
