@@ -28,7 +28,7 @@ let server = http.createServer(function(req, res) {
 					if(req.url.split("/").length == 3){
 						res.writeHead(200, headers);
 
-						res.end(JSON.stringify(startGame(decodeURI(req.url.split("/")[2]))));
+						res.end(JSON.stringify(startGame(decodeURIComponent(req.url.split("/")[2]))));
 					} else {
 						res.end("Name missing\n");
 					}
@@ -37,7 +37,7 @@ let server = http.createServer(function(req, res) {
 				case "joinGame":
 					if(req.url.split("/").length == 5){
 						// attempts to join game
-						const response = joinGame(decodeURI(req.url.split("/")[2]), decodeURI(req.url.split("/")[3]), decodeURI(req.url.split("/")[4]));
+						const response = joinGame(decodeURIComponent(req.url.split("/")[2]), decodeURIComponent(req.url.split("/")[3]), decodeURIComponent(req.url.split("/")[4]));
 
 						// invalid code
 						if(response == false){
@@ -128,7 +128,7 @@ function startGame(name) {
 	player.host = true;
 
 	// game creation message
-	newGame.sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has started the game. Use <c>!help</c>`}]});
+	newGame.sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has started the game. Use <c>!help</c>`, permission: "village"}]});
 
 	// returns new game's code and password of new player
 	return {code: newGame.code, password: player.password};
@@ -146,7 +146,7 @@ function joinGame(code, name, spectator) {
 		let player = Game.games[index].join(name, spectator);
 
 		// message that they joined the game
-		Game.games[index].sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has joined the game.`}]});
+		Game.games[index].sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has joined the game.`, permission: "village"}]});
 
 		// returns password
 		return player.password;
