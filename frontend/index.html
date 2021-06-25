@@ -155,7 +155,7 @@ function handleWebSocketMessage(message){
 
 				// shows each message
 				messageElement = document.createElement("div");
-				messageElement.innerHTML = `<span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">NAME (DATE)</span><br><span>MESSAGE</span><br><br>`;
+				messageElement.innerHTML = `<span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">NAME (DATE)</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">MESSAGE</span><br><br>`;
 				messageElement.childNodes[0].innerText = `${message.messages[i].sender} (${dateString})`;
 				messageElement.childNodes[2].innerText = `${message.messages[i].message}`;
 
