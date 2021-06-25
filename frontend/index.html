@@ -151,9 +151,6 @@ function handleWebSocketMessage(message){
 				messageElement.childNodes[0].innerText = `${message.messages[i].sender} (${dateString})`;
 				messageElement.childNodes[2].innerText = `${message.messages[i].message}`;
 
-				// adds code syntax
-				messageElement.innerHTML = messageElement.innerHTML.split("&lt;c&gt;").join("<c>").split("&lt;/c&gt;").join("</c>");
-
 				// shows message
 				chat.appendChild(messageElement);
 			}
