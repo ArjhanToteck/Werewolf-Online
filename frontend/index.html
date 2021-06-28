@@ -46,8 +46,10 @@ function startGame(name = undefined) {
 	fetch(`https://${server}/startGame?name=${encodeURIComponent(name)}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
+
+			alert("There is either a network error, or your name includes the word \"Moderator\" which is not allowed.");
+
 			throw new Error("Network response was not ok.")
-			alert("Network error.")
 		})
 		.then(function(data){
 			const parsedData = JSON.parse(data);
@@ -145,10 +147,30 @@ function handleWebSocketMessage(message){
 
 				console.log(message.messages[i].permission);
 
+				let factionMessage = "";
+
+				// not village
+				if(message.messages[i].permission != "village"){
+					// specific night chat and not with moderator
+					if(message.messages[i].permission.substring(0, 5) != "user:"){
+						factionMessage = `(To the ${message.messages[i].permission})`;
+					} else {
+						// privately from moderator
+						if(message.messages[i].sender == "Moderator"){
+							factionMessage = "(Privately)";
+						} else {
+							// from player to moderator
+							factionMessage = "(To the Moderator)";
+						}
+					}
+				}
+
+				console.log(factionMessage);
+
 				// shows each message
 				messageElement = document.createElement("div");
 				messageElement.innerHTML = `<span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">NAME (DATE)</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">MESSAGE</span><br><br>`;
-				messageElement.childNodes[0].innerText = `${message.messages[i].sender} (${dateString})`;
+				messageElement.childNodes[0].innerText = `${message.messages[i].sender} ${factionMessage} (${dateString})`;
 				messageElement.childNodes[2].innerText = `${message.messages[i].message}`;
 
 				// shows message
