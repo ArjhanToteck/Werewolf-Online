@@ -47,7 +47,10 @@ function startGame(name = undefined) {
 		.then(response => {
 			if (response.ok) return response.text()
 
-			alert("There is either a network error, or your name includes the word \"Moderator\" which is not allowed.");
+			// alerts user of error
+			response.text().then(function(data){
+				alert(data);
+			});
 
 			throw new Error("Network response was not ok.")
 		})
@@ -71,10 +74,12 @@ function startGame(name = undefined) {
 				if(event.key == "Enter"){
 					sendMessage();
 				}
-			});
+			})
 
 			setUpConnection();
-		});
+		}).catch(function() {
+        alert("There is some sort of network error. Try connecting to a different server or connecting your device to the internet.");
+    });
 }
 
 function joinGame(code = prompt("code"), name = undefined) {
@@ -85,7 +90,12 @@ function joinGame(code = prompt("code"), name = undefined) {
 	fetch(`https://${server}/joinGame?code=${code}&name=${encodeURIComponent(name)}`, {method: "POST"})
 		.then(response => {
 			if (response.ok) return response.text()
-			alert("Game code is invalid or there is a network error.")
+
+			// alerts user of error
+			response.text().then(function(data){
+				alert(data);
+			});
+
 			throw new Error("Network response was not ok.");
 		})
 		.then(function(data){
@@ -109,7 +119,9 @@ function joinGame(code = prompt("code"), name = undefined) {
 			});
 
 			setUpConnection();
-		});
+		}).catch(function() {
+        alert("There is some sort of network error. Try connecting to a different server or connecting your device to the internet.");
+    });
 }
 
 function setUpConnection(){
