@@ -15,12 +15,18 @@
 </head>
 
 <body>
+	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
 	<div id="menu">
-		<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
 		<button onclick="startGame()">Host Game</button>
 		<button onclick="joinGame()">Join Game</button>
 	</div>
 	<div id="game" style="display:none;">
+		<div id="navbar" class="navbar" style="display:none;">
+			<span class="glitch" data-text="Werewolf" text-shadow: 2px #707070;> Werewolf </span>
+			<a href="/"><button>Home</button></a>
+			<a href="instructions.html"><button>How to Play</button></a>
+			<a href="credits.html"><button>Credits</button></a>
+		</div>
 		<div id="chat"> </div>
 		<br>
 		<div id="chatInput">
@@ -35,26 +41,60 @@ const server = "werewolf.arjhantoteck.repl.co";
 let password;
 let gameCode;
 let connection;
-let test;
+
+// checks if previously saved game
+if (getCookie("code") != null && getCookie("password") != null) {
+	// sets data
+	password = getCookie("password");
+	gameCode = getCookie("code");
+
+	// sets up connection
+	setUpConnection();
+
+	// shows game
+	menu.style.display = "none";
+	game.style.display = "block";
+	heading.innerText = `Werewolf: Game ${gameCode}`;
+	heading.dataset.text = `Werewolf: Game ${gameCode}`;
+
+	// adds enter key event listener
+	document.addEventListener('keydown', function(event) {
+		if (event.key == "Enter") {
+			sendMessage();
+		}
+	});
+
+	// show navbar when scrolled past heading
+	window.addEventListener("scroll", function() {
+		let elementTarget = document.getElementById("heading");
+		if (window.scrollY > (elementTarget.offsetTop + elementTarget.offsetHeight)) {
+			document.getElementById("navbar").style.display = "block";
+		} else {
+			document.getElementById("navbar").style.display = "none";
+		}
+	});
+}
 
 function startGame(name = undefined) {
-	if(!name){
+	if (!name) {
 		name = prompt("Enter your username.");
 	}
 
 	// creates game and gets code
-	fetch(`https://${server}/startGame?name=${encodeURIComponent(name)}`, {method: "POST"})
+	fetch(`https://${server}/startGame?name=${encodeURIComponent(name)}`, {
+			method: "POST"
+		})
 		.then(response => {
 			if (response.ok) return response.text()
 
 			// alerts user of error
-			response.text().then(function(data){
+			response.text().then(function(data) {
 				alert(data);
 			});
 
 			throw new Error("Network response was not ok.")
 		})
-		.then(function(data){
+		.then(function(data) {
 			const parsedData = JSON.parse(data);
 
 			// sets password
@@ -68,37 +108,41 @@ function startGame(name = undefined) {
 			// shows game
 			menu.style.display = "none";
 			game.style.display = "block";
+			heading.innerText = `Werewolf: Game ${gameCode}`;
+			heading.dataset.text = `Werewolf: Game ${gameCode}`;
 
 			// adds enter key event listener
-			document.addEventListener('keydown', function(event){
-				if(event.key == "Enter"){
+			document.addEventListener('keydown', function(event) {
+				if (event.key == "Enter") {
 					sendMessage();
 				}
 			})
 
 			setUpConnection();
 		}).catch(function() {
-        alert("There is some sort of network error. Try connecting to a different server or connecting your device to the internet.");
-    });
+			alert("There is some sort of network error. Try connecting to a different server or connecting your device to the internet.");
+		});
 }
 
 function joinGame(code = prompt("code"), name = undefined) {
-	if(!name){
+	if (!name) {
 		name = prompt("Enter your username.");
 	}
 
-	fetch(`https://${server}/joinGame?code=${code}&name=${encodeURIComponent(name)}`, {method: "POST"})
+	fetch(`https://${server}/joinGame?code=${code}&name=${encodeURIComponent(name)}`, {
+			method: "POST"
+		})
 		.then(response => {
 			if (response.ok) return response.text()
 
 			// alerts user of error
-			response.text().then(function(data){
+			response.text().then(function(data) {
 				alert(data);
 			});
 
 			throw new Error("Network response was not ok.");
 		})
-		.then(function(data){
+		.then(function(data) {
 			// sets password
 			document.cookie = `password=${data}`;
 			password = data;
@@ -112,47 +156,57 @@ function joinGame(code = prompt("code"), name = undefined) {
 			game.style.display = "block";
 
 			// adds enter key event listener
-			document.addEventListener('keydown', function(event){
-				if(event.key == "Enter"){
+			document.addEventListener('keydown', function(event) {
+				if (event.key == "Enter") {
 					sendMessage();
 				}
 			});
 
 			setUpConnection();
 		}).catch(function() {
-        alert("There is some sort of network error. Try connecting to a different server or connecting your device to the internet.");
-    });
+			alert("There is some sort of network error. Try connecting to a different server or connecting your device to the internet.");
+		});
 }
 
-function setUpConnection(){
+function setUpConnection() {
 	// establishes connection with websocket server
 	connection = new WebSocket(`wss://${server}`);
 
 	// waits until connection opened
-	connection.addEventListener("open", function (event) {
+	connection.addEventListener("open", function(event) {
 		console.log("opened");
-		connection.send(JSON.stringify({password: password, code: gameCode, action: "linkConnection"}));
+		connection.send(JSON.stringify({
+			password: password,
+			code: gameCode,
+			action: "linkConnection"
+		}));
 	});
 
 	// recieve websocket messages
-	connection.addEventListener("message", function (event) {
-    const message = JSON.parse(event.data);
+	connection.addEventListener("message", function(event) {
+		const message = JSON.parse(event.data);
 		handleWebSocketMessage(message);
 	});
 }
 
-function sendMessage(){
-	connection.send(JSON.stringify({password: password, code: gameCode, action: "sendMessage", date: new Date().toUTCString(), message: messageBox.value}));
+function sendMessage() {
+	connection.send(JSON.stringify({
+		password: password,
+		code: gameCode,
+		action: "sendMessage",
+		date: new Date().toUTCString(),
+		message: messageBox.value
+	}));
 	messageBox.value = "";
 }
 
-function handleWebSocketMessage(message){
+function handleWebSocketMessage(message) {
 	console.log(message);
-	switch(message.action){
+	switch (message.action) {
 		// recieves chat message
 		case "recieveMessage":
 			// loops through every sent message
-			for(var i = 0; i < message.messages.length; i++){
+			for (var i = 0; i < message.messages.length; i++) {
 				// parses date
 				let date = new Date(message.messages[i].date);
 				let dateString = `${date.getMonth()}/${date.getDate()}/${date.getYear()}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes().toString().length == 2 ? date.getMinutes() : "0" + date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
@@ -162,13 +216,13 @@ function handleWebSocketMessage(message){
 				let factionMessage = "";
 
 				// not village
-				if(message.messages[i].permission != "village"){
+				if (message.messages[i].permission != "village") {
 					// specific night chat and not with moderator
-					if(message.messages[i].permission.substring(0, 5) != "user:"){
+					if (message.messages[i].permission.substring(0, 5) != "user:") {
 						factionMessage = `(To the ${message.messages[i].permission})`;
 					} else {
 						// privately from moderator
-						if(message.messages[i].sender == "Moderator"){
+						if (message.messages[i].sender == "Moderator") {
 							factionMessage = "(Privately)";
 						} else {
 							// from player to moderator
@@ -188,18 +242,33 @@ function handleWebSocketMessage(message){
 				// shows message
 				chat.appendChild(messageElement);
 			}
-		break;
+			break;
 
-		// clears chat
+			// clears chat
 		case "clearChat":
 			chat.innerHTML = "";
-		break;
+			break;
 
-		// game closes
+			// game closes
 		case "gameClosed":
 			alert(message.message);
 			location.reload;
-		break;
+			break;
 	}
+}
+
+function getCookie(name) {
+	var cname = name + "=";
+	var ca = document.cookie.split(';');
+	for (var i = 0; i < ca.length; i++) {
+		var c = ca[i];
+		while (c.charAt(0) == ' ') {
+			c = c.substring(1);
+		}
+		if (c.indexOf(cname) == 0) {
+			return c.substring(cname.length, c.length);
+		}
+	}
+	return undefined;
 }
 </script>
