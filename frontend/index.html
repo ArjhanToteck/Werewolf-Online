@@ -247,6 +247,8 @@ function handleWebSocketMessage(message) {
 			// clears chat
 		case "clearChat":
 			chat.innerHTML = "";
+			connection.close();
+			setUpConnection();
 			break;
 
 			// game closes
