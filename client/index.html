@@ -98,11 +98,11 @@ function startGame(name = undefined) {
 			const parsedData = JSON.parse(data);
 
 			// sets password
-			document.cookie = `password=${parsedData.password}`;
+			document.cookie = `password=${parsedData.password}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
 			password = parsedData.password;
 
 			// sets code
-			document.cookie = `code=${parsedData.code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
+			document.cookie = `code=${parsedData.code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
 			gameCode = parsedData.code;
 
 			// shows game
@@ -144,11 +144,11 @@ function joinGame(code = prompt("code"), name = undefined) {
 		})
 		.then(function(data) {
 			// sets password
-			document.cookie = `password=${data}`;
+			document.cookie = `password=${data}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
 			password = data;
 
 			// sets code
-			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`
+			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
 			gameCode = code;
 
 			// shows game
@@ -254,7 +254,8 @@ function handleWebSocketMessage(message) {
 			// game closes
 		case "gameClosed":
 			alert(message.message);
-			location.reload;
+			document.cookie = `code=; expires=Thu, 25 Dec 1999 12:00:00 UTC; password=; expires=Thu, 25 Dec 1999 12:00:00 UTC`;
+			location.reload();
 			break;
 	}
 }
