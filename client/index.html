@@ -17,18 +17,27 @@
 <body>
 	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
 	<div id="menu">
-		<button onclick="startGame()">Host Game</button>
+		<br>
+		<button onclick="hostGameMenu.style.display = 'block';">Host Game</button>
 		<button onclick="joinGame()">Join Game</button>
+		<br>
+		<br>
+		<div id="hostGameMenu" style="display:none;">
+			<input id="hostGameUsername" placeholder="Username">
+			<br>
+			<button onclick="startGame()">Go</button>
+		</div>
 	</div>
 	<div id="game" style="display:none;">
-		<div id="navbar" class="navbar" style="display:none;">
-			<span class="glitch" data-text="Werewolf" text-shadow: 2px #707070;> Werewolf </span>
+		<div id="navbar" class="navbar" style="display:none; left: 0px; background-color:#191919;">
+			<span class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
 			<a href="/"><button>Home</button></a>
 			<a href="instructions.html"><button>How to Play</button></a>
 			<a href="credits.html"><button>Credits</button></a>
 		</div>
-		<div id="chat"> </div>
 		<br>
+		<br>
+		<div id="chat"></div>
 		<div id="chatInput">
 			<input size="35" autocomplete="off" placeholder="Message" autofocus id="messageBox">
 			<button onclick="sendMessage()">Send</button>
@@ -54,8 +63,8 @@ if (getCookie("code") != null && getCookie("password") != null) {
 	// shows game
 	menu.style.display = "none";
 	game.style.display = "block";
-	heading.innerText = `Werewolf: Game ${gameCode}`;
-	heading.dataset.text = `Werewolf: Game ${gameCode}`;
+	heading.style.display = "none";
+	navbar.style.display = "block";
 
 	// adds enter key event listener
 	document.addEventListener('keydown', function(event) {
@@ -63,21 +72,11 @@ if (getCookie("code") != null && getCookie("password") != null) {
 			sendMessage();
 		}
 	});
-
-	// show navbar when scrolled past heading
-	window.addEventListener("scroll", function() {
-		let elementTarget = document.getElementById("heading");
-		if (window.scrollY > (elementTarget.offsetTop + elementTarget.offsetHeight)) {
-			document.getElementById("navbar").style.display = "block";
-		} else {
-			document.getElementById("navbar").style.display = "none";
-		}
-	});
 }
 
 function startGame(name = undefined) {
 	if (!name) {
-		name = prompt("Enter your username.");
+		name = hostGameUsername.value;
 	}
 
 	// creates game and gets code
@@ -154,6 +153,8 @@ function joinGame(code = prompt("code"), name = undefined) {
 			// shows game
 			menu.style.display = "none";
 			game.style.display = "block";
+			heading.innerText = `Werewolf: Game ${gameCode}`;
+			heading.dataset.text = `Werewolf: Game ${gameCode}`;
 
 			// adds enter key event listener
 			document.addEventListener('keydown', function(event) {
@@ -211,8 +212,6 @@ function handleWebSocketMessage(message) {
 				let date = new Date(message.messages[i].date);
 				let dateString = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().substring(2)}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes().toString().length == 2 ? date.getMinutes() : "0" + date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
 
-				console.log(message.messages[i].permission);
-
 				let factionMessage = "";
 
 				// not village
@@ -234,13 +233,8 @@ function handleWebSocketMessage(message) {
 				console.log(factionMessage);
 
 				// shows each message
-				messageElement = document.createElement("div");
-				messageElement.innerHTML = `<span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">NAME (DATE)</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">MESSAGE</span><br><br>`;
-				messageElement.childNodes[0].innerText = `${message.messages[i].sender} ${factionMessage} (${dateString})`;
-				messageElement.childNodes[2].innerText = `${message.messages[i].message}`;
+				chat.innerHTML += `<div><span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">${message.messages[i].sender} ${factionMessage} (${dateString})</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">${message.messages[i].message}</span><br><br></div>`;
 
-				// shows message
-				chat.appendChild(messageElement);
 			}
 			break;
 
