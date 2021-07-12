@@ -89,7 +89,7 @@ if (getCookie("code") != null && getCookie("password") != null) {
 }
 
 function startGame(name = undefined) {
-	document.onKeyDown = undefined;
+	document.onkeydown = undefined;
 
 	// sets name
 	if (!name) {
@@ -148,7 +148,7 @@ function startGame(name = undefined) {
 }
 
 function joinGame(code = undefined, name = undefined) {
-	document.onKeyDown = undefined;
+	document.onkeydown = undefined;
 
 	// sets name
 	if (!name) {
