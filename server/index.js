@@ -1,8 +1,10 @@
 const http = require("http");
 const WebSocketServer = require("websocket").server;
+const deepClone = require("lodash.clonedeep");
 
 const Game = require("./Game.js").Game;
 const Player = require("./Player.js").Player;
+const Roles = require("./Roles.js");
 
 // replace this with front end domain
 const frontend = "https://null.jsbin.com";
@@ -10,40 +12,81 @@ const frontend = "https://null.jsbin.com";
 // opens http server
 let server = http.createServer(function(req, res) {
 	const headers = {
-      "Access-Control-Allow-Origin": "*",
-			"Content-Type": "text/plain"
-  };
+		"Access-Control-Allow-Origin": frontend,
+		"Content-Type": "text/plain"
+	};
 
 	if (req.method === "POST") {
 		// no path
-		if (req.url.split("/").length <= 2) {
+		if (req.url.split("/").length <= 1) {
 			res.writeHead(404, headers);
 
 			res.end("Action not specified\n");
 		} else {
-			const action = req.url.split("/")[1];
+			const action = req.url.split("/")[1].split("?")[0];
 
 			switch (action) {
 				case "startGame":
-					if(req.url.split("/").length == 3){
+					if (req.url.includes("name=")) {
+						// checks if name includes Moderator
+						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).toLowerCase().includes("moderator")) {
+							res.writeHead(403, headers);
+							res.end('Your name may not contain the word "moderator."\n');
+							return;
+						}
+
+						// checks if name is under 4 characters
+						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).length < 4) {
+							res.writeHead(403, headers);
+							res.end("Your name must be at least 4 characters long.\n");
+							return;
+						}
+
+						// checks if name is over 15 characters
+						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).length > 15) {
+							res.writeHead(403, headers);
+							res.end("Your name must be at most 15 characters long.\n");
+							return;
+						}
+
 						res.writeHead(200, headers);
 
-						res.end(JSON.stringify(startGame(decodeURIComponent(req.url.split("/")[2]))));
+						res.end(JSON.stringify(newGame(decodeURIComponent(req.url.split("name=")[1].split("&")[0]))));
 					} else {
 						res.end("Name missing\n");
 					}
-				break;
+					break;
 
 				case "joinGame":
-					if(req.url.split("/").length == 5){
+					if (req.url.includes("name=") && req.url.includes("code=")) {
+
+						// checks if name includes Moderator
+						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).toLowerCase().includes("moderator")) {
+							res.writeHead(403, headers);
+							res.end('Your name may not contain the word "moderator."\n');
+						}
+
+						// checks if name is under 4 characters
+						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).length < 4) {
+							res.writeHead(403, headers);
+							res.end("Your name must be at least 4 letters long.\n");
+						}
+
+						// checks if name is over 15 characters
+						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).length > 15) {
+							res.writeHead(403, headers);
+							res.end("Your name must be at most 15 characters long.\n");
+							return;
+						}
+
 						// attempts to join game
-						const response = joinGame(decodeURIComponent(req.url.split("/")[2]), decodeURIComponent(req.url.split("/")[3]), decodeURIComponent(req.url.split("/")[4]));
+						const response = joinGame(decodeURIComponent(req.url.split("code=")[1].split("&")[0]), decodeURIComponent(req.url.split("name=")[1].split("&")[0]), false);
 
 						// invalid code
-						if(response == false){
+						if (response.failed) {
 							res.writeHead(404, headers);
 
-							res.end("Game not found\n");
+							res.end(`${response.reason}\n`);
 						} else {
 							// successfully joined game and returns player password
 							res.writeHead(200, headers);
@@ -55,18 +98,16 @@ let server = http.createServer(function(req, res) {
 
 						res.end("Name and/or code missing\n");
 					}
-				break;
+					break;
 
 				default:
 					res.writeHead(404, headers);
 
 					res.end("Action invalid\n");
-				break;
+					break;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		res.writeHead(405, headers);
 
 		res.end("Method Not Allowed\n");
@@ -77,61 +118,128 @@ console.log("Server running on port 8443");
 
 // opens websocket server
 wsServer = new WebSocketServer({
-    httpServer: server,
-		autoAcceptConnections: false
+	httpServer: server,
+	autoAcceptConnections: false
 });
 
 wsServer.on("request", function(request) {
 	// checks if origin matches
 	if (request.origin.indexOf(frontend) == -1) {
 		// rejects bad request
-      request.reject();
-      return;
-  } else {
+		request.reject();
+		return;
+	} else {
 		const connection = request.accept(null, request.origin);
 
 		// listens for connection to game
 		connection.on("message", function(data) {
-        if (verifyMessage(data)) {
-					const message = JSON.parse(data.utf8Data);
+			if (verifyMessage(data)) {
+				const message = JSON.parse(data.utf8Data);
 
-					const game = Game.games[Game.codes.indexOf(message.code)];
-					let player = game.players[game.passwords.indexOf(message.password)];
+				const game = Game.games[Game.codes.indexOf(message.code)];
+				if(game.bannedIps.includes(request.socket.remoteAddress)){
+					connection.sendUTF(JSON.stringify({
+						action: "gameClosed",
+						message: `You were banned from joining ${message.code}.`
+					}));
+				}
 
-					// checks if connection is in player object
-					if(player.connections.includes(connection) == false){
+				let player = game.players[game.passwords.indexOf(message.password)];
 
-						// adds connection to player
-						player.connections.push(connection);
-						connection.player = player;
-						game.connections.push(connection);
-						
-						// sends current chat to player
-						connection.sendUTF(JSON.stringify({action: "recieveMessage", messages: game.chat}));
+				// makes sure player is up to date  in connection
+				connection.player = player;
+
+				// checks if connection is in player object
+				if (player.connections.includes(connection) == false) {
+
+					// adds connection to player
+					player.connections.push(connection);
+					connection.player = player;
+					game.connections.push(connection);
+
+					// adds ip address to player (for ip bans)
+					if(!player.ips.includes(request.socket.remoteAddress)) player.ips.push(request.socket.remoteAddress);
+
+					// sends current chat to player
+					let visibleChat = deepClone(game.chat);
+					let removedMessages = 0;
+					
+					for (let i = 0; i < game.chat.length; i++) {
+						// checks if permissions are appropriate for current message
+						let permissionIncluded = false;
+
+						let j = 0;
+
+						// loops through permissions and checks if they match
+						for(j = 0; j < player.chatViewPermissions.length; j++){
+							if(player.chatViewPermissions[j].name == game.chat[i].permission){
+								permissionIncluded = true;
+								break;
+							}
+						}
+
+						// checks if role was had at the time the message was sent
+						if(!permissionIncluded || player.chatViewPermissions[j].start > game.chat[i].date || (!!player.chatViewPermissions[j].end && player.chatViewPermissions[j].end < game.chat[i].date)){
+							// removes current message
+							visibleChat.splice(i - removedMessages, 1);
+							removedMessages++;
+						}
 					}
 
-					// calls all onMessageEvents in player
-					for(let i = 0; i < player.onMessageEvents.length; i++){
-						player.onMessageEvents[i](message, player);
-					}
-        }
+					// sends chat
+					connection.sendUTF(JSON.stringify({
+						action: "recieveMessage",
+						messages: visibleChat
+					}));
+
+					// prepares for connection to close
+					connection.on("close", function() {
+						// removes connection from game
+						game.connections = game.connections.splice(game.connections.indexOf(connection), 1);
+
+						// removes connection from player
+						player.connections = player.connections.splice(player.connections.indexOf(connection), 1);
+					});
+				}
+
+				// calls all onMessageEvents in player
+				for (let i = 0; i < player.onMessageEvents.length; i++) {
+					player.onMessageEvents[i](message, player);
+				}
+			} else {
+				connection.sendUTF(JSON.stringify({
+					action: "gameClosed",
+					message: "This game does not exist."
+				}));
+			}
 		});
 	}
 });
 
-function startGame(name) {
+function newGame(name) {
 	// creates new game
 	let newGame = new Game();
-	
+
 	// creates new player 
 	let player = newGame.join(name, false);
 	player.host = true;
 
 	// game creation message
-	newGame.sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has started the game. Use <c>!help</c>`, permission: "village"}]});
+	newGame.sendMessage({
+		action: "recieveMessage",
+		messages: [{
+			sender: "Moderator",
+			date: new Date(),
+			message: `${player.name} has started the game. Use <c>!help</c>`,
+			permission: "village"
+		}]
+	});
 
 	// returns new game's code and password of new player
-	return {code: newGame.code, password: player.password};
+	return {
+		code: newGame.code,
+		password: player.password
+	};
 }
 
 function joinGame(code, name, spectator) {
@@ -139,14 +247,26 @@ function joinGame(code, name, spectator) {
 	const index = Game.codes.indexOf(code);
 
 	// makes sure code is valid
-	if(index == -1){
-		return false;
+	if (index == -1) {
+		return {failed: true, reason: "Game not found."};
 	} else {
 		// joins game and returns new player password
 		let player = Game.games[index].join(name, spectator);
 
+		if(player.failed == true){
+			return {failed: true, reason: player.reason};
+		}
+
 		// message that they joined the game
-		Game.games[index].sendMessage({action: "recieveMessage", messages: [{sender: "Moderator", date: new Date().toString(), message: `${player.name} has joined the game.`, permission: "village"}]});
+		Game.games[index].sendMessage({
+			action: "recieveMessage",
+			messages: [{
+				sender: "Moderator",
+				date: new Date(),
+				message: `${player.name} has joined the game.`,
+				permission: "village"
+			}]
+		});
 
 		// returns password
 		return player.password;
