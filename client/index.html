@@ -89,7 +89,6 @@ if (getCookie("code") != null && getCookie("password") != null) {
 }
 
 function startGame(name = undefined) {
-	document.onkeydown = undefined;
 
 	// sets name
 	if (!name) {
@@ -115,6 +114,9 @@ function startGame(name = undefined) {
 				throw new Error(data);
 				return;
 			}
+
+			// clears onkeydown event listener
+			document.onkeydown = undefined;
 
 			let parsedData = JSON.parse(data);
 
@@ -148,7 +150,6 @@ function startGame(name = undefined) {
 }
 
 function joinGame(code = undefined, name = undefined) {
-	document.onkeydown = undefined;
 
 	// sets name
 	if (!name) {
@@ -178,6 +179,9 @@ function joinGame(code = undefined, name = undefined) {
 				throw new Error(data);
 				return;
 			}
+
+			// clears onkeydown event listener
+			document.onkeydown = undefined;
 
 			// sets password
 			document.cookie = `password=${data}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
