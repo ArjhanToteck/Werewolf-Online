@@ -22,6 +22,14 @@
 		<button onclick="joinGameMenu.style.display = 'block'; hostGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') joinGame()};">Join Game</button>
 		<br>
 		<br>
+		<br>
+		<br>
+		<br>
+		<h2>Public Games</h2>
+		Don't have a group of friends available to play? Join a public game!
+		<div id="publicGames"></div>
+		<br>
+		<br>
 		<div id="hostGameMenu" style="display:none;">
 			<input id="hostGameUsername" placeholder="Username">
 			<br>
@@ -86,6 +94,27 @@ if (getCookie("code") != null && getCookie("password") != null) {
 			sendMessage();
 		}
 	});
+} else {
+	// shows public games
+	fetch(`https://${server}/publicGames`, {
+		method: "POST"
+	})
+	.then(response => {
+			// checks if response was ok
+			if(response.ok) return response.text();
+		})
+		.then(data => {
+
+			// checks if no data returned
+			if(!data){
+				publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
+				return;
+			}
+
+			// displays public games
+			let publicGamesList = "<br><li>" + JSON.parse(data).join("</li><li>") + "</li>";
+			publicGames.innerHTML = publicGamesList;
+		});
 }
 
 function startGame(name = undefined) {
