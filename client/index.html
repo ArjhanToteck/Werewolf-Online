@@ -22,14 +22,6 @@
 		<button onclick="joinGameMenu.style.display = 'block'; hostGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') joinGame()};">Join Game</button>
 		<br>
 		<br>
-		<br>
-		<br>
-		<br>
-		<h2>Public Games</h2>
-		Don't have a group of friends available to play? Join a public game!
-		<div id="publicGames"></div>
-		<br>
-		<br>
 		<div id="hostGameMenu" style="display:none;">
 			<input id="hostGameUsername" placeholder="Username">
 			<br>
@@ -50,6 +42,10 @@
 			<button onclick="joinGame()">Join</button>
 		</div>
 	</div>
+		<br>
+		<h2>Public Games</h2>
+		Don't have a group of friends available to play? Join a public game!
+		<div id="publicGames"></div>
 	<div id="game" style="display:none;">
 		<div id="navbar" class="navbar" style="display:none; left: 0px; background-color:#191919;">
 			<span class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
