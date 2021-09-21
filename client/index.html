@@ -101,12 +101,17 @@ if (getCookie("code") != null && getCookie("password") != null) {
 	})
 	.then(response => {
 			// checks if response was ok
-			if(response.ok) return response.text();
+			if(response.ok) {
+				return response.text();
+			} else {
+				publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
+				return;
+			}
 		})
 		.then(data => {
 
 			// checks if no data returned
-			if(!data){
+			if(!data || JSON.parse(data).length == 0){
 				publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
 				return;
 			}
@@ -114,7 +119,10 @@ if (getCookie("code") != null && getCookie("password") != null) {
 			// displays public games
 			let publicGamesList = "<br><li>" + JSON.parse(data).join("</li><li>") + "</li>";
 			publicGames.innerHTML = publicGamesList;
-		});
+		}).catch(function(error) {
+			publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
+			return;
+	});
 }
 
 function startGame(name = undefined) {
