@@ -18,8 +18,8 @@
 	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
 	<div id="menu">
 		<br>
-		<button onclick="hostGameMenu.style.display = 'block'; joinGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') startGame()};">Host Game</button>
-		<button onclick="joinGameMenu.style.display = 'block'; hostGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') joinGame()};">Join Game</button>
+		<button onclick="hostGameMenu.style.display = 'block'; joinGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') startGame()}; hostGameUsername.focus();">Host Game</button>
+		<button onclick="joinGameMenu.style.display = 'block'; hostGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') joinGame()}; joinGameCode.focus();">Join Game</button>
 		<br>
 		<br>
 		<div id="hostGameMenu" style="display:none;">
@@ -32,8 +32,8 @@
 			<button onclick="startGame()">Go</button>
 		</div>
 		<div id="joinGameMenu" style="display:none;">
-			<input id="joinGameCode" placeholder="Game Code">
-			<input id="joinGameUsername" placeholder="Username">
+			<input autocomplete="off" id="joinGameCode" placeholder="Game Code">
+			<input autocomplete="off" id="joinGameUsername" placeholder="Username">
 			<br>
 			<span id="joinGameError" style="display:none; color:red;">
 				<br>
@@ -41,14 +41,14 @@
 			<br>
 			<button onclick="joinGame()">Join</button>
 		</div>
+		<h2>Public Games</h2>
+		Don't have a group of friends available to play? Join a public game by using one of the codes below!
+		<div id="publicGames"></div>
 	</div>
 		<br>
-		<h2>Public Games</h2>
-		Don't have a group of friends available to play? Join a public game!
-		<div id="publicGames"></div>
 	<div id="game" style="display:none;">
 		<div id="navbar" class="navbar" style="display:none; left: 0px; background-color:#191919;">
-			<span class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
+			<span id="navbarText" class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
 			<a href="/"><button>Home</button></a>
 			<a href="instructions.html"><button>How to Play</button></a>
 			<a href="credits.html"><button>Credits</button></a>
@@ -56,7 +56,8 @@
 		<br>
 		<br>
 		<div id="chat"></div>
-		<div id="chatInput">
+		<br>
+		<div id="chatInput" style="position: fixed; bottom:10;">
 			<input size="35" autocomplete="off" placeholder="Message" autofocus id="messageBox">
 			<button onclick="sendMessage()">Send</button>
 		</div>
@@ -83,6 +84,9 @@ if (getCookie("code") != null && getCookie("password") != null) {
 	game.style.display = "block";
 	heading.style.display = "none";
 	navbar.style.display = "block";
+	navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
+	navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
+	messageBox.focus();
 
 	// adds enter key event listener
 	document.addEventListener('keydown', function(event) {
@@ -164,8 +168,12 @@ function startGame(name = undefined) {
 			// shows game
 			menu.style.display = "none";
 			game.style.display = "block";
-			heading.innerText = `Werewolf: Game ${gameCode}`;
-			heading.dataset.text = `Werewolf: Game ${gameCode}`;
+			heading.style.display = "none";
+			navbar.style.display = "block";
+			navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
+			navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
+			messageBox.focus();
+
 
 			// adds enter key event listener
 			document.addEventListener('keydown', function(event) {
@@ -227,8 +235,11 @@ function joinGame(code = undefined, name = undefined) {
 			// shows game
 			menu.style.display = "none";
 			game.style.display = "block";
-			heading.innerText = `Werewolf: Game ${gameCode}`;
-			heading.dataset.text = `Werewolf: Game ${gameCode}`;
+			heading.style.display = "none";
+			navbar.style.display = "block";
+			navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
+			navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
+			messageBox.focus();
 
 			// adds enter key event listener
 			document.addEventListener('keydown', function(event) {
@@ -259,10 +270,17 @@ function setUpConnection() {
 		}));
 	});
 
+	// checks if scrolled down (for auto scroll script)
+	let scrolledToBottom = true;
+
+	window.onscroll = function(e) {
+		scrolledToBottom = (window.innerHeight + window.pageYOffset) >= document.body.offsetHeight;
+	};
+
 	// recieve websocket messages
 	connection.addEventListener("message", function(event) {
 		const message = JSON.parse(event.data);
-		handleWebSocketMessage(message);
+		handleWebSocketMessage(message, scrolledToBottom);
 	});
 }
 
@@ -277,8 +295,9 @@ function sendMessage() {
 	messageBox.value = "";
 }
 
-function handleWebSocketMessage(message) {
+function handleWebSocketMessage(message, scrolledToBottom) {
 	console.log(message);
+
 	switch (message.action) {
 		// recieves chat message
 		case "recieveMessage":
@@ -311,6 +330,11 @@ function handleWebSocketMessage(message) {
 				// shows each message
 				chat.innerHTML += `<div><span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">${message.messages[i].sender} ${factionMessage} (${dateString})</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">${message.messages[i].message}</span><br><br></div>`;
 
+			}
+
+			// autoscroll script
+			if(scrolledToBottom){
+				window.scrollTo(0, document.body.scrollHeight);
 			}
 			break;
 
