@@ -1,4 +1,35 @@
 const roles = {
+	avenger: {
+		description: "You are an avenger. If you die, you will kill the player who wronged you in your final breath. If you are killed by vote, you will kill a random player who voted for you. This kill will ignore any protection.",
+		value: 0,
+
+		role: {
+			name: "avenger",
+			seenByOthers: "avenger",
+			seenBySelf: "avenger"
+		},
+
+		faction: {
+			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village"
+		},
+
+		onDeathEvent: function(player, killer) {
+			console.log(killer.lynched);
+			// checks if player was killed by vote
+			if (killer.lynched) {
+				// chooses random voter as victom
+				let victim = killer.voters[Math.floor(Math.random() * killer.voters.length)];
+
+				victim.die(player, true, `As ${player.name} hung from a noose, they reached out and strangled ${victim.name} for revenge in their final breath.`);
+			} else {
+				console.log(`killer (${killer.name}) being killed`);
+				killer.die(player, true);
+			}
+		}
+	},
+
 	baker: {
 		description: "You are a baker. You can bake and give bread to somebody every night and they will know to trust you as the baker.",
 		value: 3,
@@ -96,6 +127,8 @@ const roles = {
 
 					// valid target
 
+					player.ready = true;
+
 					// sets target in data
 					if (!player.data.baker) player.data.baker = {};
 					player.data.baker.target = target;
@@ -119,7 +152,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You wake up to find a loaf of homemade bread given to you by ${player.name} as a gift. You can trust ${player.name}.`,
+						message: `You wake up to find a loaf of fresh homemade bread left at your door by ${player.name} as a gift. You now know for certain that ${player.name} is a village member.`,
 						date: new Date(),
 						permission: `user:${player.data.baker.target.name}`
 					}]
@@ -131,6 +164,8 @@ const roles = {
 
 		onDayEndEvent: function(player) {
 			if (player.dead == false) {
+				player.ready = false;
+
 				player.game.sendMessage({
 					action: "recieveMessage",
 					messages: [{
@@ -140,6 +175,8 @@ const roles = {
 						permission: `user:${player.name}`
 					}]
 				});
+			} else {
+				player.ready = true;
 			}
 		}
 	},
@@ -156,8 +193,8 @@ const roles = {
 
 		faction: {
 			name: "wolfpack",
-			name: "wolfpack",
-			name: "wolfpack",
+			seenByOthers: "wolfpack",
+			seenBySelf: "wolfpack",
 		},
 
 		chatViewPermissions: ["wolfpack"],
@@ -165,8 +202,12 @@ const roles = {
 
 		onMessageEvent: function(message, player) {
 			if (player.game.dayPhase.phase == "night" && player.dead == false) {
-				// !check command
-				if (message.action == "sendMessage" && message.message.substring(0, 7) == "!check ") {
+				// !kill command
+				if (message.action == "sendMessage" && message.message.substring(0, 6) == "!kill ") {
+					wolfpackKill(message, player);
+
+					// !check command
+				} else if (message.action == "sendMessage" && message.message.substring(0, 7) == "!check ") {
 					let target = null;
 
 					// !check Moderator easter egg
@@ -259,6 +300,7 @@ const roles = {
 					}
 
 					// valid target
+					player.ready = true;
 
 					// sets target in data to target
 					if (!player.data.bloodhound) player.data.bloodhound = {};
@@ -270,7 +312,7 @@ const roles = {
 							sender: "Moderator",
 							message: `You will check ${message.message.substring(7)}'s role tonight.`,
 							date: new Date(),
-								permission: "wolfpack"
+							permission: "wolfpack"
 						}]
 					});
 				}
@@ -279,6 +321,8 @@ const roles = {
 
 		onDayEndEvent: function(player) {
 			if (player.dead == false) {
+				player.ready = false;
+
 				player.game.sendMessage({
 					action: "recieveMessage",
 					messages: [{
@@ -288,17 +332,44 @@ const roles = {
 						permission: `user:${player.name}`
 					}]
 				});
+			} else {
+				player.ready = true;
 			}
 		},
 
 		onNightEndEvent: function(player) {
+			// !kill
+			// checks if target was chosen
+			if (!!player.game.data && !!player.game.data.wolfpack && player.game.data.wolfpack.targets && player.game.data.wolfpack.targets.length > 0) {
+				// loops through every target
+				for (let i = 0; i < player.game.data.wolfpack.targets.length; i++) {
+					// checks if current player is killer
+					if (player.game.data.wolfpack.targets[i].killer == player && player.game.data.wolfpack.targets[i].target.dead == false) {
+
+						// removes targets
+						if (!player.game.data.wolfpack.targetsKilled) player.game.data.wolfpack.targetsKilled = 0;
+						player.game.data.wolfpack.targetsKilled++;
+
+						// kills target
+						player.game.data.wolfpack.targets[i].target.die(player);
+					}
+				}
+
+				// resets target data
+				if (player.game.data.wolfpack.targetsKilled >= player.game.data.wolfpack.targets.length) {
+					player.game.data.wolfpack.targetsKilled = 0;
+					player.game.data.wolfpack.targets = [];
+				}
+			}
+
+			// !check
 			// checks if target was chosen
 			if (!!player.data.bloodhound && !!player.data.bloodhound.target) {
 				player.game.sendMessage({
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You checked ${player.data.bloodhound.target.name} is a ${player.data.bloodhound.target.role.role.seenByOthers}.`,
+						message: `Last night, you checked ${player.data.bloodhound.target.name} and found they are a ${player.data.bloodhound.target.role.role.seenByOthers}.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -481,7 +552,7 @@ const roles = {
 					// checks if current player is killer
 					if (player.game.data.wolfpack.targets[i].killer == player && player.game.data.wolfpack.targets[i].target.dead == false) {
 						// kills target
-						player.game.data.wolfpack.targets[i].target.die();
+						player.game.data.wolfpack.targets[i].target.die(player);
 					}
 				}
 
@@ -492,6 +563,185 @@ const roles = {
 				}
 			}
 		}
+	},
+
+	doppelgänger: {
+		description: "You are a doppelgänger. On the first night you will choose another player. You will become the role that player was.",
+		value: 0,
+
+		role: {
+			name: "doppelgänger",
+			seenByOthers: "doppelgänger",
+			seenBySelf: "doppelgänger"
+		},
+
+		faction: {
+			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village"
+		},
+
+		onMessageEvent: function(message, player) {
+			if (player.role.role.name == "doppelgänger" && player.game.dayPhase.phase == "night" && player.dead == false) {
+				// !copy command
+				if (message.action == "sendMessage" && message.message.substring(0, 6) == "!copy ") {
+					let target = null;
+
+					// !check Moderator easter egg
+					if (message.message == "!copy Moderator") {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "I know you wish you were me, but you can't be me.",
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// !check self easter egg
+					if (message.message == `!copy ${player.name}`) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "Would that make you a doppelgänger for another night or would that... forget it, you can't do it to yourself.",
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// loops through players in game
+					for (let i = 0; i < player.game.players.length; i++) {
+						// checks if current player name matches target name
+						if (player.game.players[i].name == message.message.substring(6)) {
+							target = player.game.players[i];
+							break;
+						}
+					}
+
+					// target not found
+					if (target == null) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `There is no player in the game called "${message.message.substring(6)}". Check your spelling or try copy-pasting their name.`,
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// checking a dead player
+					if (target.dead) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `${player.name} is dead. Wait a second, this is the first night, how is there a dead player?`,
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// valid target
+
+					// sets target in data to target
+					if (!player.data.doppelgänger) player.data.doppelgänger = {};
+					player.data.doppelgänger.target = target;
+
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You will copy ${message.message.substring(6)}'s role tonight.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				}
+			}
+		},
+
+		onNightEndEvent: function(player) {
+			// checks if target was chosen
+			if (player.role.role.name == "doppelgänger" && !!player.data.doppelgänger && !!player.data.doppelgänger.target) {
+				// copies role from target to player
+				player.role = player.data.doppelgänger.target.role;
+				player.faction = player.data.doppelgänger.target.faction;
+
+				// checks if role comes with chat permissions
+				if (!!player.role.chatViewPermissions) {
+					// adds chat permissions from role to player
+					for (let i = 0; i < player.role.chatViewPermissions.length; i++) {
+						player.chatViewPermissions.push({
+							name: player.role.chatViewPermissions[i],
+							start: new Date(),
+							end: null
+						});
+					}
+				}
+
+				// adds role data to player
+				if (!!player.role.onMessageEvent) player.onMessageEvents.push(player.role.onMessageEvent);
+				if (!!player.role.onDayEndEvent) player.onDayEndEvents.push(player.role.onDayEndEvent);
+				if (!!player.role.onNightEndEvent) player.onNightEndEvents.push(player.role.onNightEndEvent);
+				if (!!player.role.onDeathEvent) player.onDeathEvents.push(player.role.onDeathEvent);
+				if (!!player.role.subfactions) player.subfactions = player.subfactions.concat(player.role.subfactions);
+
+				// removes doppelgänger data
+				delete player.data.doppelgänger;
+			}
+		},
+
+		onDayEndEvent: function(player) {
+			if (player.role.role.name == "doppelgänger") {
+				if (player.dead == false) {
+					player.ready = false;
+
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You are a doppelgänger. You can use the command <c>!copy username</c> to copy a player's role. If you do not choose a player, a random one will be chosen for you.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+
+					// gets living players
+					let livingPlayers = [];
+
+					// loops through every player
+					for (let i = 0; i < player.game.players.length; i++) {
+						// adds player to list if alive
+						let currentPlayer = player.game.players[i];
+						if (!currentPlayer.dead) livingPlayers.push(currentPlayer);
+					}
+
+					// sets player target to random living player
+					player.data.doppelgänger = livingPlayers[Math.floor(Math.random() * livingPlayers.length)];
+				} else {
+					player.ready = true;
+				}
+			}
+		},
 	},
 
 	fool: {
@@ -506,8 +756,8 @@ const roles = {
 
 		faction: {
 			name: "village",
-			name: "village",
-			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village",
 		},
 
 		chatViewPermissions: null,
@@ -633,7 +883,7 @@ const roles = {
 					messages: [{
 						sender: "Moderator",
 						// picks random fake faction
-						message: `You checked ${player.data.fool.target.name}'s faction. They are a member of the ${Math.floor(Math.random() * 4) == 0 ? "wolfpack" : "villager"}.`,
+						message: `You checked ${player.data.fool.target.name}'s faction. Their faction is "${Math.floor(Math.random() * 4) == 0 ? "wolfpack" : "village"}".`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -644,8 +894,371 @@ const roles = {
 		}
 	},
 
+	gravedigger: {
+		description: "You are a gravedigger. Once per night, you may dig up a dead player's corpse and find out what their role was while they were alive.",
+		value: 2,
+
+		role: {
+			name: "gravedigger",
+			seenByOthers: "gravedigger",
+			seenBySelf: "gravedigger"
+		},
+
+		faction: {
+			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village",
+		},
+
+		chatViewPermissions: null,
+		chatSendPermission: null,
+
+		onMessageEvent: function(message, player) {
+			if (player.game.dayPhase.phase == "night" && player.dead == false) {
+				// !check command
+				if (message.action == "sendMessage" && message.message.substring(0, 7) == "!check ") {
+					let target = null;
+
+					// !check Moderator easter egg
+					if (message.message == "!check Moderator") {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "I'm not... I... What?",
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// !check self easter egg
+					if (message.message == `!check ${player.name}`) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "Listen, I ran out of funny lines to say when you misuse abilities. Just don't check yourself, okay?",
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// loops through players in game
+					for (let i = 0; i < player.game.players.length; i++) {
+						// checks if current player name matches target name
+						if (player.game.players[i].name == message.message.substring(7)) {
+							target = player.game.players[i];
+							break;
+						}
+					}
+
+					// target not found
+					if (target == null) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `There is no player in the game called "${message.message.substring(7)}". Check your spelling or try copy-pasting their name.`,
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// checking a living player
+					if (!target.dead) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `${player.name} isn't dead yet. I understand you're eager, but be patient and wait until they die.`,
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// valid target
+					player.ready = true;
+
+					// sets target in data to target
+					if (!player.data.gravedigger) player.data.gravedigger = {};
+					player.data.gravedigger.target = target;
+
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You will check ${message.message.substring(7)}'s role tonight.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				}
+			}
+		},
+
+		onDayEndEvent: function(player) {
+			if (player.dead == false) {
+				player.ready = false;
+
+				player.game.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						message: `You are a gravedigger. You can use the command <c>!check username</c> to check the role of a dead player.`,
+						date: new Date(),
+						permission: `user:${player.name}`
+					}]
+				});
+			} else {
+				player.ready = true;
+			}
+		},
+
+		onNightEndEvent: function(player) {
+			// checks if target was chosen
+			if (!!player.data.gravedigger && !!player.data.gravedigger.target) {
+				player.game.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						message: `You dug up ${player.data.gravedigger.target.name}'s corpse and found out they were a ${player.data.gravedigger.target.role.role.seenByOthers}.`,
+						date: new Date(),
+						permission: `user:${player.name}`
+					}]
+				});
+
+				player.data.gravedigger.target = null;
+			}
+		}
+	},
+
+	"lost mason": {
+		description: "You are a lost mason, a member of a secret society who was seperated from the group. Every night, you can try to reunite yourself with your fellow masons.",
+		value: 2,
+
+		role: {
+			name: "lost mason",
+			seenByOthers: "lost mason",
+			seenBySelf: "lost mason"
+		},
+
+		faction: {
+			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village",
+		},
+
+		chatViewPermissions: null,
+		chatSendPermission: null,
+
+		onMessageEvent: function(message, player) {
+			if (player.game.dayPhase.phase == "night" && player.dead == false && (!player.data["lost mason"] || !player.data["lost mason"].reunited)) {
+				// !check command
+				if (message.action == "sendMessage" && message.message.substring(0, 7) == "!check ") {
+					let target = null;
+
+					// !check Moderator easter egg
+					if (message.message == "!check Moderator") {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "Saddly, I'm not a mason. Checks someone else.",
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// !check self easter egg
+					if (message.message == `!check ${player.name}`) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "You have to find another mason, not yourself.",
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// loops through players in game
+					for (let i = 0; i < player.game.players.length; i++) {
+						// checks if current player name matches target name
+						if (player.game.players[i].name == message.message.substring(7)) {
+							target = player.game.players[i];
+							break;
+						}
+					}
+
+					// target not found
+					if (target == null) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `There is no player in the game called "${message.message.substring(7)}". Check your spelling or try copy-pasting their name.`,
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// checking a dead player
+					if (target.dead) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `${player.name} is dead. I don't think they can help you find the masons.`,
+								date: new Date(),
+								permission: `user:${player.name}`
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// valid target
+					player.ready = true;
+
+					// sets target in data to target
+					if (!player.data["lost mason"]) player.data["lost mason"] = {
+						reunited: false
+					};
+					player.data["lost mason"].target = target;
+
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `Tonight you will check if ${message.message.substring(7)} is a mason.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				}
+			}
+		},
+
+		onDayEndEvent: function(player) {
+			if (player.dead == false) {
+				// checks if mason is not yet reunited
+				if ((!player.data["lost mason"] || !player.data["lost mason"].reunited)) {
+					player.ready = false;
+
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You are a lost mason. You can use the command <c>!check username</c> to check if a player is a mason. If they are, you will be able to join your fellow masons tomorrow night.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				} else {
+					player.ready = true;
+
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: 'You were a lost mason who is now reunited with your secret society. You can converse with your fellow masons at night.',
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				}
+			} else {
+				player.ready = true;
+			}
+		},
+
+		onNightEndEvent: function(player) {
+			// checks if target was chosen
+			if (!!player.data["lost mason"] && !!player.data["lost mason"].target) {
+				// checks if target is mason
+				if (player.data["lost mason"].target.subfactions.includes("masons")) {
+					// tells masons player was reunited
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `${player.name} was a lost mason but they found ${player.data["lost mason"].target.name} and is now a member of the masons.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+
+					// tells player they were reunited
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You checked ${player.data["lost mason"].target.name} to see if they are a mason. It turns out they were. You are now reunited with the masons.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+
+					// sets player data
+					player.data["lost mason"].reunited = true;
+
+					// gives player mason permissions
+					player.chatViewPermissions.push({
+						name: "mason",
+						start: new Date(),
+						end: null
+					});
+
+					player.nightChatSendPermission = "mason";
+				} else {
+					// tells player target was not mason
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You checked ${player.data["lost mason"].target.name} to see if they are a mason. Saddly, they weren't. You can try to check someone else again tonight.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				}
+
+				player.data["lost mason"].target = null;
+			}
+		}
+	},
+
 	lycan: {
-		description: "You are an ordinary villager. You lack any special power, so you must use your wits to identify and kill off the werewolves plaguing your town.",
+		description: "You are an ordinary villager. You lack any special power, so you must use your wits to identify and vote to lynch the werewolves plaguing your town.",
 		value: -0.5,
 
 		role: {
@@ -706,7 +1319,7 @@ const roles = {
 							action: "recieveMessage",
 							messages: [{
 								sender: "Moderator",
-								message: "You know that wouldn't do anything, right?.",
+								message: "You know that wouldn't do anything, right? You can't give your own life to save yourself.",
 								date: new Date(),
 								permission: `user:${player.name}`
 							}]
@@ -758,6 +1371,7 @@ const roles = {
 					}
 
 					// valid target
+					player.ready = true;
 
 					// sets target in data
 					if (!player.data.martyr) player.data.martyr = {
@@ -775,7 +1389,7 @@ const roles = {
 
 					// kills player on protect
 					target.onProtectEvents.push(function() {
-						player.die();
+						player.die(player);
 
 						player.game.sendMessage({
 							action: "recieveMessage",
@@ -810,11 +1424,51 @@ const roles = {
 
 		onDayEndEvent: function(player) {
 			if (player.dead == false) {
+				player.ready = false;
+
 				player.game.sendMessage({
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
 						message: 'You are a martyr. You can protect others by using the command <c>!protect username</c>. If someone tries to kill them, you will be killed instead.',
+						date: new Date(),
+						permission: `user:${player.name}`
+					}]
+				});
+			} else {
+				player.ready = true;
+			}
+		}
+	},
+
+	mason: {
+		description: "You are a mason, a trusted member of a secret organization that meets at night. At night, you may talk with other masons.",
+		value: 0,
+
+		role: {
+			name: "mason",
+			seenByOthers: "mason",
+			seenBySelf: "mason"
+		},
+
+		faction: {
+			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village"
+		},
+
+		subfactions: ["masons"],
+
+		chatViewPermissions: ["mason"],
+		chatSendPermission: "mason",
+
+		onDayEndEvent: function(player) {
+			if (player.dead == false) {
+				player.game.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						message: 'You are a mason. You can converse with your fellow masons at night.',
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -875,7 +1529,7 @@ const roles = {
 
 						// kills player at morning
 						player.onDayEndEvents.push(function() {
-							player.die(true);
+							player.die(player, true);
 						});
 					} else {
 						player.game.sendMessage({
@@ -990,6 +1644,7 @@ const roles = {
 					}
 
 					// valid target
+					player.ready = true;
 
 					// sets target in data
 					if (!player.data.protector) player.data.protector = {
@@ -1027,6 +1682,8 @@ const roles = {
 
 		onDayEndEvent: function(player) {
 			if (player.dead == false) {
+				player.ready = false;
+
 				player.game.sendMessage({
 					action: "recieveMessage",
 					messages: [{
@@ -1036,6 +1693,8 @@ const roles = {
 						permission: `user:${player.name}`
 					}]
 				});
+			} else {
+				player.ready = true;
 			}
 		}
 	},
@@ -1052,8 +1711,8 @@ const roles = {
 
 		faction: {
 			name: "village",
-			name: "village",
-			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village",
 		},
 
 		chatViewPermissions: null,
@@ -1139,6 +1798,7 @@ const roles = {
 					}
 
 					// valid target
+					player.ready = true;
 
 					// sets target in data to target
 					if (!player.data.seer) player.data.seer = {};
@@ -1159,6 +1819,8 @@ const roles = {
 
 		onDayEndEvent: function(player) {
 			if (player.dead == false) {
+				player.ready = false;
+
 				player.game.sendMessage({
 					action: "recieveMessage",
 					messages: [{
@@ -1168,6 +1830,8 @@ const roles = {
 						permission: `user:${player.name}`
 					}]
 				});
+			} else {
+				player.ready = true;
 			}
 		},
 
@@ -1178,7 +1842,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You checked ${player.data.seer.target.name}'s faction. They are a member of the ${player.data.seer.target.role.faction.seenByOthers}.`,
+						message: `You checked ${player.data.seer.target.name}'s faction. Their faction is "${player.data.seer.target.role.faction.seenByOthers}".`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1239,7 +1903,7 @@ const roles = {
 					// checks if current player is killer
 					if (player.game.data.wolfpack.targets[i].killer == player && player.game.data.wolfpack.targets[i].target.dead == false) {
 						// kills target
-						player.game.data.wolfpack.targets[i].target.die();
+						player.game.data.wolfpack.targets[i].target.die(player);
 					}
 				}
 
@@ -1263,9 +1927,9 @@ const roles = {
 		},
 
 		faction: {
-			name: "village",
+			name: "wolfpack",
 			seenByOthers: "village",
-			seenBySelf: "village"
+			seenBySelf: "wolfpack"
 		},
 
 		chatViewPermissions: ["wolfpack"],
@@ -1298,116 +1962,136 @@ const roles = {
 						target: null
 					};
 
-					// checks if kill not already used
-					if (!player.data.vigilante.killUsed) {
-						let target = null;
+					// already used power
+					if (player.data.vigilante.killUsed) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "Sorry, buddy, but you can only kill one person per game, which you already did. If you're getting bloodthirsty, cheer up, you can always vote to lynch someone during the day.",
+								date: new Date(),
+								permission: player.chatSendPermission
+							}]
+						});
 
-						// !kill Moderator easter egg
-						if (message.message == "!kill Moderator") {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "Careful where you point that thing!",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
+						// exits function
+						return;
+					}
 
-							// exits function
-							return;
-						}
+					let target = null;
 
-						// suicide easter egg
-						if (message.message == `!kill ${player.name}`) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "Please don't try to kill yourself.",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
+					// !kill Moderator easter egg
+					if (message.message == "!kill Moderator") {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "Careful where you point that thing!",
+								date: new Date(),
+								permission: player.chatSendPermission
+							}]
+						});
 
-							// exits function
-							return;
-						}
+						// exits function
+						return;
+					}
 
-						// loops through players in game
-						for (let i = 0; i < player.game.players.length; i++) {
-							// checks if current player name matches target name
-							if (player.game.players[i].name == message.message.substring(6)) {
-								target = player.game.players[i];
-								break;
-							}
-						}
+					// suicide easter egg
+					if (message.message == `!kill ${player.name}`) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: "Please don't try to kill yourself.",
+								date: new Date(),
+								permission: player.chatSendPermission
+							}]
+						});
 
-						// target not found
-						if (target == null) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `There is no player in the game called "${message.message.substring(6)}".`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
+						// exits function
+						return;
+					}
 
-							return;
-						}
-
-						// killing a dead player
-						if (target.dead) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `${message.message.substring(6)} is already dead. Are you wasting your only kill on a corpse?`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// exits function
-							return;
-						}
-
-						player.data.vigilante.target = target;
-
-					} else {
-						// already used power
-						if (target.dead) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "Sorry, buddy, but you can only kill one person per game, which you already did. If you're getting bloodthirsty, you can always vote to lynch someone during the day.",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// exits function
-							return;
+					// loops through players in game
+					for (let i = 0; i < player.game.players.length; i++) {
+						// checks if current player name matches target name
+						if (player.game.players[i].name == message.message.substring(6)) {
+							target = player.game.players[i];
+							break;
 						}
 					}
+
+					// target not found
+					if (target == null) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `There is no player in the game called "${message.message.substring(6)}".`,
+								date: new Date(),
+								permission: player.chatSendPermission
+							}]
+						});
+
+						return;
+					}
+
+					// killing a dead player
+					if (target.dead) {
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `${message.message.substring(6)} is already dead. Are you wasting your only kill on a corpse?`,
+								date: new Date(),
+								permission: player.chatSendPermission
+							}]
+						});
+
+						// exits function
+						return;
+					}
+
+					// valid target
+					player.ready = true;
+
+					player.data.vigilante.target = target;
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `Tonight you will kill ${target.name}.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
 				}
 			}
 		},
 
 		onDayEndEvent: function(player) {
 			if (player.dead == false) {
-				player.game.sendMessage({
-					action: "recieveMessage",
-					messages: [{
-						sender: "Moderator",
-						message: `You are a vigilante. You can use the command <c>!kill username</c> to kill a player. This power can only be used once per game. If the player you try to kill is protected, and as a result does not die, you still cannot use this power again.`,
-						date: new Date(),
-						permission: `user:${player.name}`
-					}]
-				});
+				player.ready = false;
+
+				// sets data in player if missing
+				if (!player.data.vigilante) player.data.vigilante = {
+					killUsed: false,
+					target: null
+				};
+
+				if (!player.data.vigilante.killUsed) {
+					player.game.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							message: `You are a vigilante. You can use the command <c>!kill username</c> to kill a player. This power can only be used once per game. If the player you try to kill is protected, and as a result does not die, you still cannot use this power again.`,
+							date: new Date(),
+							permission: `user:${player.name}`
+						}]
+					});
+				}
+			} else {
+				player.ready = true;
 			}
 		},
 
@@ -1417,9 +2101,9 @@ const roles = {
 				target: null
 			};
 
-			if(!!player.data.vigilante.target){
-				player.data.vigilante.target.die();
-				player.data.killUsed = true;
+			if (!!player.data.vigilante.target) {
+				player.data.vigilante.target.die(player);
+				player.data.vigilante.killUsed = true;
 			}
 		},
 	},
@@ -1496,7 +2180,7 @@ const roles = {
 						player.game.data.wolfpack.targetsKilled++;
 
 						// kills target
-						player.game.data.wolfpack.targets[i].target.die();
+						player.game.data.wolfpack.targets[i].target.die(player);
 					}
 				}
 
@@ -1514,9 +2198,9 @@ const roles = {
 		value: -1,
 
 		role: {
-			name: "werewolf",
-			seenByOthers: "werewolf",
-			seenBySelf: "werewolf"
+			name: "wolf cub",
+			seenByOthers: "wolf cub",
+			seenBySelf: "wolf cub"
 		},
 
 		faction: {
@@ -1562,7 +2246,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `${player.name}, your wolf cub, died today. Their death has brought rage to the wolfpack. You have an extra kill tonight.`,
+						message: `${player.name}, your wolf cub, died today. Their death has brought rage to the wolfpack. As a result, you have an extra kill tonight.`,
 						date: new Date(),
 						permission: `wolfpack`
 					}]
@@ -1583,7 +2267,7 @@ const roles = {
 						player.game.data.wolfpack.targetsKilled++;
 
 						// kills target
-						player.game.data.wolfpack.targets[i].target.die();
+						player.game.data.wolfpack.targets[i].target.die(player);
 					}
 				}
 
@@ -1757,8 +2441,122 @@ function wolfpackKill(message, player) {
 	});
 }
 
-function generateRoles(playerCount) {
-	return [roles.werewolf, roles["wolf cub"]];
+function generateRoles(game) {
+	const powerRoles = [roles.avenger, roles.baker, roles.gravedigger, roles.doppelgänger, roles["lost mason"], roles.martyr, roles.mason, roles.protector, roles.seer, roles.vigilante];
+	const negativePowerRoles = [roles.fool, roles["old man"], roles.traitor];
+	const wolfRoles = [roles.bloodhound, roles.bloodletter, roles["silent wolf"], roles.werewolf, roles["wolf cub"]];
+	
+	let outputRoles = [];
+	let outputRoleNames = [];
+
+	// one power role for about every 3 players
+	let powerRolesAmount = Math.round(game.players.length / 3);
+
+	// one wolf for about every 5 players
+	let wolvesAmount = Math.round(game.players.length / 5);
+
+	// one negative power role for every 8 players if there are at least 10 players
+	let negativePowerRolesAmount = game.players.length >= 10 ? Math.round(game.players.length / 8) : 0;
+
+	// villagers amount is left unset since it can change
+	let villagersAmount;
+
+	// adds power roles
+	for (let i = 0; i < powerRolesAmount; i++) {
+		// gets random role
+		let randomRole = powerRoles[Math.floor(Math.random() * powerRoles.length)];
+
+		// removes gravedigger if roles are revealed on death (as it would be a pointless role)
+		if(game.settings.revealRolesOnDeath){
+			// sets randomRole to a random role until it's not gravedigger anymore
+			while(randomRole.role.name == "gravedigger"){
+				randomRole = powerRoles[Math.floor(Math.random() * powerRoles.length)];
+			}
+		}
+
+		// adds randomRole to list of roles
+		outputRoles.push(randomRole);
+		outputRoleNames.push(randomRole.role.name);
+	}
+
+	// fixes lost masons but no regular masons
+	if (outputRoleNames.includes("lost mason") && !outputRoleNames.includes("mason")) {
+		// turns one of the lost masons into a regular mason
+		let index = outputRoleNames.indexOf("lost mason");
+		outputRoles[index] = roles.mason;
+		outputRoleNames[index] = "mason";
+	}
+
+	// fixes only one mason
+	if (outputRoleNames.filter(x => x == "mason").length == 1) {
+		// 1/3 chance to add new mason (unless less than 7 players)
+		if (Math.floor(Math.random() * 2) == 0 && game.players.length >= 7) {
+			// increases power role amount and adds extra mason
+			powerRolesAmount++;
+			outputRoles.push(roles.mason);
+			outputRoleNames.push("mason");
+		} else {
+			// gets random index of item in outputRoles
+			let index = Math.floor(Math.random() * outputRoles.length);
+
+			// makes sure it isn't the index of a mason
+			while (outputRoles[index].role.name == "mason") {
+				index = Math.floor(Math.random() * outputRoles.length);
+			}
+
+			// replaces role in index with a mason
+			outputRoles[index] = roles.mason;
+			outputRoleNames[index] = "mason";
+		}
+	}
+
+	// adds wolf roles
+	for (let i = 0; i < wolvesAmount; i++) {
+		// gets random role
+		let randomRole = wolfRoles[Math.floor(Math.random() * wolfRoles.length)];
+
+		// adds randomRole to list of roles
+		outputRoles.push(randomRole);
+		outputRoleNames.push(randomRole.role.name);
+	}
+
+	// fixes wolf cub with no other wolves
+	if (wolvesAmount == 1 && outputRoleNames.includes("wolf cub")){
+		// gets random wolf role
+		let randomRole = wolfRoles[Math.floor(Math.random() * wolfRoles.length)];
+
+		// makes sure random wolf role isn't wolf cub
+		while(randomRole.role.name == "wolf cub"){
+			randomRole = wolfRoles[Math.floor(Math.random() * wolfRoles.length)];
+		}
+
+		// turns wolf cub into random role
+		let index = outputRoleNames.indexOf("wolf cub");
+		outputRoles[index] = randomRole;
+		outputRoleNames[index] = randomRole.role.name;
+	}
+
+	// adds regular villagers
+	villagersAmount = game.players.length - wolvesAmount - powerRolesAmount - negativePowerRolesAmount;
+
+	for (let i = 0; i < villagersAmount; i++) {
+		// adds villager to roles list
+		outputRoles.push(roles.villager);
+		outputRoleNames.push("villager");
+	}
+
+	// shuffles roles
+	let newOutputRoles = [];
+	let outputRolesLength = outputRoles.length;
+	for(let i = 0; i < outputRolesLength; i++){
+		// gets random index in roles
+		let randomIndex = Math.floor(Math.random() * outputRoles.length);
+		newOutputRoles.push(outputRoles[randomIndex]);
+		outputRoles.splice(randomIndex, 1);
+	}
+
+	// returns output roles
+	return newOutputRoles;
 }
 
 // exports roles
