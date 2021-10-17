@@ -457,9 +457,9 @@ function Game() {
 
 				// gets data for win conditions
 				if (!currentPlayer.dead) {
-					if (currentPlayer.role.faction.name == "wolfpack") {
+					if (currentPlayer.role.faction.name == "wolfpack" && currentPlayer.role.name !== "traitor") {
 						livingWolves.push(currentPlayer);
-					} else {
+					} else if (currentPlayer.role.name !== "traitor") {
 						livingNonWolves.push(currentPlayer);
 					}
 				}
