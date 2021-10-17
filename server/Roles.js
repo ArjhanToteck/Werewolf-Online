@@ -682,6 +682,17 @@ const roles = {
 		onNightEndEvent: function(player) {
 			// checks if target was chosen
 			if (player.role.role.name == "doppelgänger" && !!player.data.doppelgänger && !!player.data.doppelgänger.target) {
+				// lets player now what they have become
+				player.game.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						message: `You have copied ${player.data.doppelgänger.target.name}'s role. ${player.data.doppelgänger.target.role.description}`,
+						date: new Date(),
+						permission: `user:${player.name}`
+					}]
+				});
+				
 				// copies role from target to player
 				player.role = player.data.doppelgänger.target.role;
 				player.faction = player.data.doppelgänger.target.faction;
@@ -1389,7 +1400,7 @@ const roles = {
 
 					// kills player on protect
 					target.onProtectEvents.push(function() {
-						player.die(player);
+						player.die(player, true);
 
 						player.game.sendMessage({
 							action: "recieveMessage",
