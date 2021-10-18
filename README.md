@@ -9,4 +9,4 @@ During the game, there are two phases. A day phase, where the entire town discus
 The game ends when either there are no players left alive (nobody wins), no wolves left alive (village wins), or the number of wolfpack members is greater than or equal to that of the village (wolfpack wins).
 
 # Open Source
-I made the game open source in case anyone wants to learn about the basics of developing online games or in case other people want to make their own versions and edits to the game. Just make sure to follow the MIT license.
+I made the game open source in case anyone wants to learn about the basics of developing online games or in case other people want to make their own versions and edits to the game. I don't care what you do with my code as long as you make sure to follow the MIT license.
