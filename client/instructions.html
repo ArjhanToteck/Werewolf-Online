@@ -1,31 +1,72 @@
 <head>
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-68J35F2R6N"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-68J35F2R6N"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
 
-    gtag('config', 'G-68J35F2R6N');
-  </script>
+		function gtag() {
+			dataLayer.push(arguments);
+		}
+		gtag('js', new Date());
 
-  <title>Werewolf Instructions | ArjhanToteck</title>
-  <link rel="icon" href="/favicon.png">
-  <link href="/style.css" rel="stylesheet" type="text/css" media="all">
+		gtag('config', 'G-68J35F2R6N');
+	</script>
+
+	<title>Werewolf Instructions | ArjhanToteck</title>
+	<link rel="icon" href="/favicon.png">
+	<link href="/style.css" rel="stylesheet" type="text/css" media="all">
 </head>
 
 <h1 data-text="Instructions" class="glitch">Instructions</h1>
 
 <h2 data-text="Starting the Game" class="glitch">Starting the Game</h2>
 
-Games can be created by pressing the button labeled "Host Game" and entering the username you want.  While the game has not started, anyone can join if they press "Join Game" in the menu, input the game code, and input their desired username. 
+Games can be created by pressing the button labeled "Host Game" and entering the username you want. While the game has not started, anyone can join if they press "Join Game" in the menu, input the game code, and input their desired username.
 
 To start the game, there must be at least five players and somebody must type the command <c>!start</c>.
 <br>
 If you want to play but can't get enough people you know to play, make the game public! Use the command <c>!settings public</c> to make the game code be shown in the menu screen to anyone playing. This can always be turned off by using the same command again.
 
 <h2 data-text="Roles" class="glitch">Roles</h2>
-Each player has a role, many of which grant special abilities to the player. There are two main types of roles which are reffered to as "factions": the wolfpack and village. The wolfpack roles have abilities that help them kill village members, and the village roles have abbilites that help them stop the wolfpack and ultimately get rid of them.
+Each player has a role, many of which grant special abilities to the player. There are two main types of roles which are reffered to as "factions": the <a href="factions/wolfpack.html">wolfpack</a> and <a href="factions/village.html">village</a>. The wolfpack roles have abilities that help them kill village members, and the village roles have abbilites that help them stop the wolfpack and ultimately get rid of them. A list of roles, sorted by factions, is shown below:
+
+<br>
+<br>
+
+<b><a href="factions/village.html">Village Roles</a>:</b>
+
+<br>
+<br>
+
+<li><a href="roles/avenger.html">Avenger</a></li>
+<li><a href="roles/baker.html">Baker</a></li>
+<li><a href="roles/doppelgänger.html">Doppelgänger</a></li>
+<li><a href="roles/fool.html">Fool</a></li>
+<li><a href="roles/gravedigger.html">Gravedigger</a></li>
+<li><a href="roles/lost%20mason.html">Lost Mason</a></li>
+<li><a href="roles/lycan.html">Lycan</a></li>
+<li><a href="roles/martyr.html">Martyr</a></li>
+<li><a href="roles/mason.html">Mason</a></li>
+<li><a href="roles/old%20man.html">Old Man</a></li>
+<li><a href="roles/protector.html">Protector</a></li>
+<li><a href="roles/seer.html">Seer</a></li>
+<li><a href="roles/vigilante.html">Vigilante</a></li>
+<li><a href="roles/villager.html">Villager</a></li>
+
+<br>
+<br>
+
+<b><a href="factions/wolfpack.html">Wolfpack Roles</a>:</b>
+
+<br>
+<br>
+
+<li><a href="roles/bloodhound.html">Bloodhound</a></li>
+<li><a href="roles/bloodletter.html">Bloodletter</a></li>
+<li><a href="roles/silent%20wolf.html">Silent Wolf</a></li>
+<li><a href="roles/seer.html">Traitor</a></li>
+<li><a href="roles/werewolf.html">Werewolf</a></li>
+<li><a href="roles/wolf%20cub.html">Wolf Cub</a></li>
 
 <h2 data-text="Daytime" class="glitch">Daytime</h2>
 
@@ -37,31 +78,53 @@ During the night, players with special abilities, such as werewolves, have the o
 
 <h2 data-text="Commands" class="glitch">Commands</h2>
 
-Additional to the commands granted to you at night by your <a href="roles/">role</a>, you can type the global commands (shown below) in the chat to use them.  Some commands have parameters. For example, the command <c>!vote (username)</c> has the parameter <c>username</c>. This parameter should be replaced with the username of a living player in the game. For example, <c>!vote ArjhanToteck</c> would vote for a player named "ArjhanToteck".
+Additional to the commands granted to you at night by your <a href="roles/">role</a>, you can type the global commands (shown below) in the chat to use them. Some commands have parameters. For example, the command <c>!vote (username)</c> has the parameter <c>username</c>. This parameter should be replaced with the username of a living player in the game. For example, <c>!vote ArjhanToteck</c> would vote for a player named "ArjhanToteck".
 
 <br>
 <br>
 
-<li><c>!help</c>: when this command is sent in the chat, the moderator will respond with links for several helpful pages.</li>
-<li><c>!players (type)</c>: when this command is sent in the chat, the moderator will respond with a list of players in the game. If the parameter <c>(type)</c> is equal to <c>alive</c>, the list will only include living players. If it's equal to <c>dead</c>, the list will only include dead players. If the message is sent as <c>!players</c> (without a parameter), the list will include all players.</li>
-<li><c>!settings</c>: this command will show the current settings of the game.</li>
-<li><c>!settings allowPlayersToJoin</c>: this command will toggle whether or not players are currently able to join the game. Cannot be changed once the game has started.</li>>
-<li><c>!settings public</c>: this command will toggle whether or not the game is shown on the menu as a game that can be joined by anyone. Cannot be changed once the game has started.</li>
-<li><c>!settings revealRolesInGame</c>: this command will toggle whether or not the list of roles in the game will be revealed when the game starts. Cannot be changed once the game has started.</li>
-<li><c>!settings revealRolesOnDeath</c>: this command will toggle whether or not the moderator will reveal the role of a player when they die. Cannot be changed once the game has started.</li>
-<li><c>!start</c>: this command is used to start the game and can only be used if the game has not started.</li>
-<li><c>!start</c>: this command is used to start the game and can only be used if the game has not started.</li>
-<li><c>!vote (username)</c>: this command is used to vote on who to lynch. The parameter <c>(username)</c> must be replaced with the username of any living player in the game. This command can only be used by living players during the day. Also, the game must be started and it can't be the first day.</li>
-<li><c>!votes</c>: this command will show you the list of everyone who is being voted for lynching and who voted for them.</li>
+<li>
+	<c>!help</c>: when this command is sent in the chat, the moderator will respond with links for several helpful pages.
+</li>
+<li>
+	<c>!players (type)</c>: when this command is sent in the chat, the moderator will respond with a list of players in the game. If the parameter <c>(type)</c> is equal to <c>alive</c>, the list will only include living players. If it's equal to <c>dead</c>, the list will only include dead players. If the message is sent as <c>!players</c> (without a parameter), the list will include all players.
+</li>
+<li>
+	<c>!settings</c>: this command will show the current settings of the game.
+</li>
+<li>
+	<c>!settings allowPlayersToJoin</c>: this command will toggle whether or not players are currently able to join the game. Cannot be changed once the game has started.
+</li>>
+<li>
+	<c>!settings public</c>: this command will toggle whether or not the game is shown on the menu as a game that can be joined by anyone. Cannot be changed once the game has started.
+</li>
+<li>
+	<c>!settings revealRolesInGame</c>: this command will toggle whether or not the list of roles in the game will be revealed when the game starts. Cannot be changed once the game has started.
+</li>
+<li>
+	<c>!settings revealRolesOnDeath</c>: this command will toggle whether or not the moderator will reveal the role of a player when they die. Cannot be changed once the game has started.
+</li>
+<li>
+	<c>!start</c>: this command is used to start the game and can only be used if the game has not started.
+</li>
+<li>
+	<c>!start</c>: this command is used to start the game and can only be used if the game has not started.
+</li>
+<li>
+	<c>!vote (username)</c>: this command is used to vote on who to lynch. The parameter <c>(username)</c> must be replaced with the username of any living player in the game. This command can only be used by living players during the day. Also, the game must be started and it can't be the first day.
+</li>
+<li>
+	<c>!votes</c>: this command will show you the list of everyone who is being voted for lynching and who voted for them.
+</li>
 
 <h2 data-text="Private Messages" class="glitch">Private Messages</h2>
 
-If you are of the village faction, any messages sent at night will only be seen by the automated moderator. This is so that you can use commands at night that nobody else will be able to see. If you are a werewolf, any messages sent at night will be visible to the moderator and the other wolves. If you are dead, all messages will be visible to only other dead players. Note that a private message is red, as opposed to white, and will say who it is visible to next to right next to the name of the person who sent it. For example: 
+If you are of the village faction, any messages sent at night will only be seen by the automated moderator. This is so that you can use commands at night that nobody else will be able to see. If you are a werewolf, any messages sent at night will be visible to the moderator and the other wolves. If you are dead, all messages will be visible to only other dead players. Note that a private message is red, as opposed to white, and will say who it is visible to next to right next to the name of the person who sent it. For example:
 
 <br>
 <br>
 
-<span style="background-color:red; color:#262626;"> ArjhanToteck (to the wolfpack) (10/18/21, 4:20 PM)</span> 
+<span style="background-color:red; color:#262626;"> ArjhanToteck (to the wolfpack) (10/18/21, 4:20 PM)</span>
 <br>
 <span style="color:red;">This message can only be seen by other wolves.<br></span>
 
