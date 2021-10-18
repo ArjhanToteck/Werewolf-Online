@@ -18,13 +18,12 @@
 	<h1 class="glitch" id="heading" data-text="Werewolf">Werewolf</h1>
 	<div id="menu">
 		<br>
-		<button onclick="hostGameMenu.style.display = 'block'; joinGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') startGame()}; 
-				 .focus();">Host Game</button>
+		<button onclick="hostGameMenu.style.display = 'block'; joinGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') startGame()}; hostGameUsername.focus();">Host Game</button>
 		<button onclick="joinGameMenu.style.display = 'block'; hostGameMenu.style.display = 'none'; document.onkeydown = function(event){if(event.key == 'Enter') joinGame()}; joinGameCode.focus();">Join Game</button>
 		<br>
 		<br>
 		<div id="hostGameMenu" style="display:none;">
-			<input autocomplete="off" id="hostGameUsername" placeholder="Username">
+			<input id="hostGameUsername" placeholder="Username">
 			<br>
 			<span id="hostGameError" style="display:none; color:red;">
 				<br>
@@ -47,7 +46,7 @@
 		<div id="publicGames"></div>
 	</div>
 		<br>
-	<div id="game" style="display:none;">
+	<div id="game" style="display:none;" width:100%>
 		<div id="navbar" class="navbar" style="display:none; left: 0px; background-color:#191919;">
 			<span id="navbarText" class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
 			<a href="/"><button>Home</button></a>
@@ -58,8 +57,8 @@
 		<br>
 		<div id="chat"></div>
 		<br>
-		<div id="chatInput" style="position: fixed; bottom:10;">
-			<input size="35" autocomplete="off" placeholder="Message" autofocus id="messageBox">
+		<div id="chatInput" style="position: fixed; bottom:10; width:100%">
+			<input style="width:75%" autocomplete="off" placeholder="Message" autofocus id="messageBox">
 			<button onclick="sendMessage()">Send</button>
 		</div>
 	</div>
