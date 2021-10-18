@@ -47,7 +47,7 @@
 		Don't have a group of friends available to play? Join a public game by using one of the codes below!
 		<div id="publicGames"></div>
 	</div>
-		<br>
+	<br>
 	<div id="game" style="display:none;" width:100%>
 		<div id="navbar" class="navbar" style="display:none; left: 0px; background-color:#191919;">
 			<span id="navbarText" class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
@@ -67,307 +67,307 @@
 </body>
 
 <script>
-const server = "werewolf.arjhantoteck.repl.co";
-let password;
-let gameCode;
-let connection;
+	const server = "werewolf.arjhantoteck.repl.co";
+	let password;
+	let gameCode;
+	let connection;
 
-// checks if previously saved game
-if (getCookie("code") != null && getCookie("password") != null) {
-	// sets data
-	password = getCookie("password");
-	gameCode = getCookie("code");
+	// checks if previously saved game
+	if (getCookie("code") != null && getCookie("password") != null) {
+		// sets data
+		password = getCookie("password");
+		gameCode = getCookie("code");
 
-	// sets up connection
-	setUpConnection();
+		// sets up connection
+		setUpConnection();
 
-	// shows game
-	menu.style.display = "none";
-	game.style.display = "block";
-	heading.style.display = "none";
-	navbar.style.display = "block";
-	navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
-	navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
-	messageBox.focus();
+		// shows game
+		menu.style.display = "none";
+		game.style.display = "block";
+		heading.style.display = "none";
+		navbar.style.display = "block";
+		navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
+		navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
+		messageBox.focus();
 
-	// adds enter key event listener
-	document.addEventListener('keydown', function(event) {
-		if (event.key == "Enter") {
-			sendMessage();
-		}
-	});
-} else {
-	// shows public games
-	fetch(`https://${server}/publicGames`, {
-		method: "POST"
-	})
-	.then(response => {
-			// checks if response was ok
-			if(response.ok) {
-				return response.text();
-			} else {
-				publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
-				return;
+		// adds enter key event listener
+		document.addEventListener('keydown', function(event) {
+			if (event.key == "Enter") {
+				sendMessage();
 			}
-		})
-		.then(data => {
-
-			// checks if no data returned
-			if(!data || JSON.parse(data).length == 0){
-				publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
-				return;
-			}
-
-			// displays public games
-			let publicGamesList = "<br><li>" + JSON.parse(data).join("</li><li>") + "</li>";
-			publicGames.innerHTML = publicGamesList;
-		}).catch(function(error) {
-			publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
-			return;
-	});
-}
-
-function startGame(name = undefined) {
-
-	// sets name
-	if (!name) {
-		name = hostGameUsername.value;
-	}
-
-	let responseOk = true;
-
-	// creates game and gets code
-	fetch(`https://${server}/startGame?name=${encodeURIComponent(name)}`, {
-			method: "POST"
-		})
-		.then(response => {
-			// checks if response was ok
-			responseOk = response.ok;
-
-			return response.text();
-		})
-		.then(data => {
-			// checks if response was ok
-			if(responseOk == false){
-				// throws recieved data as error
-				throw new Error(data);
-				return;
-			}
-
-			// clears onkeydown event listener
-			document.onkeydown = undefined;
-
-			let parsedData = JSON.parse(data);
-
-			// sets password
-			document.cookie = `password=${parsedData.password}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
-			password = parsedData.password;
-
-			// sets code
-			document.cookie = `code=${parsedData.code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
-			gameCode = parsedData.code;
-
-			// shows game
-			menu.style.display = "none";
-			game.style.display = "block";
-			heading.style.display = "none";
-			navbar.style.display = "block";
-			navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
-			navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
-			messageBox.focus();
-
-
-			// adds enter key event listener
-			document.addEventListener('keydown', function(event) {
-				if (event.key == "Enter") {
-					sendMessage();
+		});
+	} else {
+		// shows public games
+		fetch(`https://${server}/publicGames`, {
+				method: "POST"
+			})
+			.then(response => {
+				// checks if response was ok
+				if (response.ok) {
+					return response.text();
+				} else {
+					publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
+					return;
 				}
 			})
+			.then(data => {
 
-			setUpConnection();
-		}).catch(function(error) {
-			if(error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. Try connecting to a different server or checking your internet connection.";
-      hostGameError.style.display = "block";
-			hostGameError.innerHTML = "<br>" + error.message;
-    });
-}
-
-function joinGame(code = undefined, name = undefined) {
-
-	// sets name
-	if (!name) {
-		name = joinGameUsername.value;
-	}
-
-	// sets code
-	if (!code) {
-		code = joinGameCode.value;
-	}
-
-	let responseOk = true;
-
-	fetch(`https://${server}/joinGame?code=${code}&name=${encodeURIComponent(name)}`, {
-			method: "POST"
-		})
-		.then(response => {
-			// checks if response was ok
-			responseOk = response.ok;
-
-			return response.text();
-		})
-		.then(function(data) {
-			// checks if response was ok
-			if(responseOk == false){
-				// throws recieved data as error
-				throw new Error(data);
-				return;
-			}
-
-			// clears onkeydown event listener
-			document.onkeydown = undefined;
-
-			// sets password
-			document.cookie = `password=${data}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
-			password = data;
-
-			// sets code
-			document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
-			gameCode = code;
-
-			// shows game
-			menu.style.display = "none";
-			game.style.display = "block";
-			heading.style.display = "none";
-			navbar.style.display = "block";
-			navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
-			navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
-			messageBox.focus();
-
-			// adds enter key event listener
-			document.addEventListener('keydown', function(event) {
-				if (event.key == "Enter") {
-					sendMessage();
+				// checks if no data returned
+				if (!data || JSON.parse(data).length == 0) {
+					publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
+					return;
 				}
+
+				// displays public games
+				let publicGamesList = "<br><li>" + JSON.parse(data).join("</li><li>") + "</li>";
+				publicGames.innerHTML = publicGamesList;
+			}).catch(function(error) {
+				publicGames.innerHTML = "<br><i>There are no public games open right now.</i>";
+				return;
 			});
+	}
 
-			setUpConnection();
-		}).catch(function(error) {
-			if(error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. Try connecting to a different server or checking your internet connection.";
-      joinGameError.style.display = "block";
-			joinGameError.innerHTML = "<br>" + error.message;
-    });
-}
+	function startGame(name = undefined) {
 
-function setUpConnection() {
-	// establishes connection with websocket server
-	connection = new WebSocket(`wss://${server}`);
+		// sets name
+		if (!name) {
+			name = hostGameUsername.value;
+		}
 
-	// waits until connection opened
-	connection.addEventListener("open", function(event) {
-		console.log("opened");
+		let responseOk = true;
+
+		// creates game and gets code
+		fetch(`https://${server}/startGame?name=${encodeURIComponent(name)}`, {
+				method: "POST"
+			})
+			.then(response => {
+				// checks if response was ok
+				responseOk = response.ok;
+
+				return response.text();
+			})
+			.then(data => {
+				// checks if response was ok
+				if (responseOk == false) {
+					// throws recieved data as error
+					throw new Error(data);
+					return;
+				}
+
+				// clears onkeydown event listener
+				document.onkeydown = undefined;
+
+				let parsedData = JSON.parse(data);
+
+				// sets password
+				document.cookie = `password=${parsedData.password}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				password = parsedData.password;
+
+				// sets code
+				document.cookie = `code=${parsedData.code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				gameCode = parsedData.code;
+
+				// shows game
+				menu.style.display = "none";
+				game.style.display = "block";
+				heading.style.display = "none";
+				navbar.style.display = "block";
+				navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
+				navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
+				messageBox.focus();
+
+
+				// adds enter key event listener
+				document.addEventListener('keydown', function(event) {
+					if (event.key == "Enter") {
+						sendMessage();
+					}
+				})
+
+				setUpConnection();
+			}).catch(function(error) {
+				if (error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. Try connecting to a different server or checking your internet connection.";
+				hostGameError.style.display = "block";
+				hostGameError.innerHTML = "<br>" + error.message;
+			});
+	}
+
+	function joinGame(code = undefined, name = undefined) {
+
+		// sets name
+		if (!name) {
+			name = joinGameUsername.value;
+		}
+
+		// sets code
+		if (!code) {
+			code = joinGameCode.value;
+		}
+
+		let responseOk = true;
+
+		fetch(`https://${server}/joinGame?code=${code}&name=${encodeURIComponent(name)}`, {
+				method: "POST"
+			})
+			.then(response => {
+				// checks if response was ok
+				responseOk = response.ok;
+
+				return response.text();
+			})
+			.then(function(data) {
+				// checks if response was ok
+				if (responseOk == false) {
+					// throws recieved data as error
+					throw new Error(data);
+					return;
+				}
+
+				// clears onkeydown event listener
+				document.onkeydown = undefined;
+
+				// sets password
+				document.cookie = `password=${data}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				password = data;
+
+				// sets code
+				document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				gameCode = code;
+
+				// shows game
+				menu.style.display = "none";
+				game.style.display = "block";
+				heading.style.display = "none";
+				navbar.style.display = "block";
+				navbarText.innerHTML = `Werewolf: Game ${gameCode} &nbsp;`;
+				navbarText.dataset.text = `Werewolf: Game ${gameCode} &nbsp;`;
+				messageBox.focus();
+
+				// adds enter key event listener
+				document.addEventListener('keydown', function(event) {
+					if (event.key == "Enter") {
+						sendMessage();
+					}
+				});
+
+				setUpConnection();
+			}).catch(function(error) {
+				if (error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. Try connecting to a different server or checking your internet connection.";
+				joinGameError.style.display = "block";
+				joinGameError.innerHTML = "<br>" + error.message;
+			});
+	}
+
+	function setUpConnection() {
+		// establishes connection with websocket server
+		connection = new WebSocket(`wss://${server}`);
+
+		// waits until connection opened
+		connection.addEventListener("open", function(event) {
+			console.log("opened");
+			connection.send(JSON.stringify({
+				password: password,
+				code: gameCode,
+				action: "linkConnection"
+			}));
+		});
+
+		// checks if scrolled down (for auto scroll script)
+		let scrolledToBottom = true;
+
+		window.onscroll = function(e) {
+			scrolledToBottom = (window.innerHeight + window.pageYOffset) >= document.body.offsetHeight;
+		};
+
+		// recieve websocket messages
+		connection.addEventListener("message", function(event) {
+			const message = JSON.parse(event.data);
+			handleWebSocketMessage(message, scrolledToBottom);
+		});
+	}
+
+	function sendMessage() {
 		connection.send(JSON.stringify({
 			password: password,
 			code: gameCode,
-			action: "linkConnection"
+			action: "sendMessage",
+			date: new Date().toUTCString(),
+			message: messageBox.value
 		}));
-	});
+		messageBox.value = "";
+	}
 
-	// checks if scrolled down (for auto scroll script)
-	let scrolledToBottom = true;
+	function handleWebSocketMessage(message, scrolledToBottom) {
+		console.log(message);
 
-	window.onscroll = function(e) {
-		scrolledToBottom = (window.innerHeight + window.pageYOffset) >= document.body.offsetHeight;
-	};
+		switch (message.action) {
+			// recieves chat message
+			case "recieveMessage":
+				// loops through every sent message
+				for (var i = 0; i < message.messages.length; i++) {
+					// parses date
+					let date = new Date(message.messages[i].date);
+					let dateString = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().substring(2)}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes().toString().length == 2 ? date.getMinutes() : "0" + date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
 
-	// recieve websocket messages
-	connection.addEventListener("message", function(event) {
-		const message = JSON.parse(event.data);
-		handleWebSocketMessage(message, scrolledToBottom);
-	});
-}
+					let factionMessage = "";
 
-function sendMessage() {
-	connection.send(JSON.stringify({
-		password: password,
-		code: gameCode,
-		action: "sendMessage",
-		date: new Date().toUTCString(),
-		message: messageBox.value
-	}));
-	messageBox.value = "";
-}
-
-function handleWebSocketMessage(message, scrolledToBottom) {
-	console.log(message);
-
-	switch (message.action) {
-		// recieves chat message
-		case "recieveMessage":
-			// loops through every sent message
-			for (var i = 0; i < message.messages.length; i++) {
-				// parses date
-				let date = new Date(message.messages[i].date);
-				let dateString = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().substring(2)}, ${date.getHours() > 12 ? date.getHours() - 12 : date.getHours()}:${date.getMinutes().toString().length == 2 ? date.getMinutes() : "0" + date.getMinutes()} ${date.getHours() > 12 ? "PM" : "AM"}`;
-
-				let factionMessage = "";
-
-				// not village
-				if (message.messages[i].permission != "village") {
-					// specific night chat and not with moderator
-					if (message.messages[i].permission.substring(0, 5) != "user:") {
-						factionMessage = `(To the ${message.messages[i].permission})`;
-					} else {
-						// privately from moderator
-						if (message.messages[i].sender == "Moderator") {
-							factionMessage = "(Privately)";
+					// not village
+					if (message.messages[i].permission != "village") {
+						// specific night chat and not with moderator
+						if (message.messages[i].permission.substring(0, 5) != "user:") {
+							factionMessage = `(To the ${message.messages[i].permission})`;
 						} else {
-							// from player to moderator
-							factionMessage = "(To the Moderator)";
+							// privately from moderator
+							if (message.messages[i].sender == "Moderator") {
+								factionMessage = "(Privately)";
+							} else {
+								// from player to moderator
+								factionMessage = "(To the Moderator)";
+							}
 						}
 					}
+
+					console.log(factionMessage);
+
+					// shows each message
+					chat.innerHTML += `<div><span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">${message.messages[i].sender} ${factionMessage} (${dateString})</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">${message.messages[i].message}</span><br><br></div>`;
+
 				}
 
-				console.log(factionMessage);
+				// autoscroll script
+				if (scrolledToBottom) {
+					window.scrollTo(0, document.body.scrollHeight);
+				}
+				break;
 
-				// shows each message
-				chat.innerHTML += `<div><span style="background-color: ${message.messages[i].permission == "village" ? "white" : "red"}; color: #262626">${message.messages[i].sender} ${factionMessage} (${dateString})</span><br><span style="color: ${message.messages[i].permission == "village" ? "white" : "red"};">${message.messages[i].message}</span><br><br></div>`;
+				// clears chat
+			case "clearChat":
+				chat.innerHTML = "";
+				connection.close();
+				setUpConnection();
+				break;
 
-			}
-
-			// autoscroll script
-			if(scrolledToBottom){
-				window.scrollTo(0, document.body.scrollHeight);
-			}
-			break;
-
-			// clears chat
-		case "clearChat":
-			chat.innerHTML = "";
-			connection.close();
-			setUpConnection();
-			break;
-
-			// game closes
-		case "gameClosed":
-			alert(message.message);
-			document.cookie = `code=; expires=Thu, 25 Dec 1999 12:00:00 UTC; password=; expires=Thu, 25 Dec 1999 12:00:00 UTC`;
-			location.reload();
-			break;
-	}
-}
-
-function getCookie(name) {
-	var cname = name + "=";
-	var ca = document.cookie.split(';');
-	for (var i = 0; i < ca.length; i++) {
-		var c = ca[i];
-		while (c.charAt(0) == ' ') {
-			c = c.substring(1);
-		}
-		if (c.indexOf(cname) == 0) {
-			return c.substring(cname.length, c.length);
+				// game closes
+			case "gameClosed":
+				alert(message.message);
+				document.cookie = `code=; expires=Thu, 25 Dec 1999 12:00:00 UTC; password=; expires=Thu, 25 Dec 1999 12:00:00 UTC`;
+				location.reload();
+				break;
 		}
 	}
-	return undefined;
-}
+
+	function getCookie(name) {
+		var cname = name + "=";
+		var ca = document.cookie.split(';');
+		for (var i = 0; i < ca.length; i++) {
+			var c = ca[i];
+			while (c.charAt(0) == ' ') {
+				c = c.substring(1);
+			}
+			if (c.indexOf(cname) == 0) {
+				return c.substring(cname.length, c.length);
+			}
+		}
+		return undefined;
+	}
 </script>
