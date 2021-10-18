@@ -1,6 +1,6 @@
 const roles = {
 	avenger: {
-		description: "You are an avenger. If you die, you will kill the player who wronged you in your final breath. If you are killed by vote, you will kill a random player who voted for you. This kill will ignore any protection.",
+		description: "You are an <a href=\"roles/avenger.html\">avenger</a>. If you die, you will kill the player who wronged you in your final breath. If you are killed by vote, you will kill a random player who voted for you. This kill will ignore any protection.",
 		value: 0,
 
 		role: {
@@ -31,7 +31,7 @@ const roles = {
 	},
 
 	baker: {
-		description: "You are a baker. You can bake and give bread to somebody every night and they will know to trust you as the baker.",
+		description: "You are a <a href=\"roles/baker.html\">baker</a>. You can bake and give bread to somebody every night and they will know to trust you as the baker.",
 		value: 3,
 
 		role: {
@@ -170,7 +170,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: 'You are a baker. You can give bread to people by using the command <c>!give username</c>. Replace the word "username" with the username of the player to whom you will give bread.',
+						message: 'You are a <a href=\"roles/baker.html\">baker</a>. You can give bread to people by using the command <c>!give username</c>. Replace the word "username" with the username of the player to whom you will give bread.',
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -182,7 +182,7 @@ const roles = {
 	},
 
 	bloodhound: {
-		description: "You are a bloodhound, a wolf with a highly trained sense of smell. From the smell of a man's blood, you can identify their role. Once per night, you can check the role of a player.",
+		description: "You are a <a href=\"roles/bloodhound.html\">bloodhound</a>, a wolf with a highly trained sense of smell. From the smell of a man's blood, you can identify their role. Once per night, you can check the role of a player.",
 		value: 2,
 
 		role: {
@@ -327,7 +327,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a bloodhound. You can use the command <c>!check username</c> to check a player's role.`,
+						message: `You are a <a href=\"roles/bloodhound.html\">bloodhound</a>. You can use the command <c>!check username</c> to check a player's role.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -369,7 +369,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `Last night, you checked ${player.data.bloodhound.target.name} and found they are a ${player.data.bloodhound.target.role.role.seenByOthers}.`,
+						message: `Last night, you checked ${player.data.bloodhound.target.name} and found they are a <a href="roles/${player.data.bloodhound.target.role.role.seenByOthers.split(" ").join("%20")}.html">${player.data.bloodhound.target.role.role.seenByOthers}</a>.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -381,7 +381,7 @@ const roles = {
 	},
 
 	bloodletter: {
-		description: "You are a bloodletter, a powerful type of wolf. You can kill, like other wolves, but you can also mark people with wolf blood. Marking a player with wolf blood will make seers see them as a wolf.",
+		description: "You are a <a href=\"roles/bloodletter.html\">bloodletter</a>, a powerful type of wolf. You can kill, like other wolves, but you can also mark people with wolf blood. Marking a player with wolf blood will make seers see them as a wolf.",
 		value: -2,
 
 		role: {
@@ -523,7 +523,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a bloodletter and a member of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player.  The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight. Additionally, you, as a bloodletter, can mark a player with wolf blood. This will make seers think they are wolves. Use the command <c>!mark username/c> to use this abillity.`,
+						message: `You are a <a href=\"roles/bloodletter.html\">bloodletter</a> and a member of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player.  The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight. Additionally, you, as a bloodletter, can mark a player with wolf blood. This will make seers think they are wolves. Use the command <c>!mark username/c> to use this abillity.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -566,7 +566,7 @@ const roles = {
 	},
 
 	doppelgänger: {
-		description: "You are a doppelgänger. On the first night you will choose another player. You will become the role that player was.",
+		description: "You are a <a href=\"roles/doppelgänger.html\">doppelgänger</a>. On the first night you will choose another player. You will become the role that player was.",
 		value: 0,
 
 		role: {
@@ -730,7 +730,7 @@ const roles = {
 						action: "recieveMessage",
 						messages: [{
 							sender: "Moderator",
-							message: `You are a doppelgänger. You can use the command <c>!copy username</c> to copy a player's role. If you do not choose a player, a random one will be chosen for you.`,
+							message: `You are a <a href=\"roles/doppelgänger.html\">doppelgänger</a>. You can use the command <c>!copy username</c> to copy a player's role. If you do not choose a player, a random one will be chosen for you.`,
 							date: new Date(),
 							permission: `user:${player.name}`
 						}]
@@ -756,7 +756,7 @@ const roles = {
 	},
 
 	fool: {
-		description: "You are a seer, a powerful magician. You can peer into the minds of other players and see their true nature. Be aware, however, that some roles are seen unreliably.",
+		description: "You are a <a href=\"roles/seer.html\">seer</a>, a powerful magician. You can peer into the minds of other players and see their true nature. Be aware, however, that some roles are seen unreliably.",
 		value: 2,
 
 		role: {
@@ -878,7 +878,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a seer. You can use the command <c>!check username</c> to check a player's faction.`,
+						message: `You are a <a href=\"roles/seer.html\">seer</a>. You can use the command <c>!check username</c> to check a player's faction.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -906,7 +906,7 @@ const roles = {
 	},
 
 	gravedigger: {
-		description: "You are a gravedigger. Once per night, you may dig up a dead player's corpse and find out what their role was while they were alive.",
+		description: "You are a <a href=\"roles/gravedigger.html\">gravedigger</a>. Once per night, you may dig up a dead player's corpse and find out what their role was while they were alive.",
 		value: 2,
 
 		role: {
@@ -1031,7 +1031,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a gravedigger. You can use the command <c>!check username</c> to check the role of a dead player.`,
+						message: `You are a <a href=\"roles/gravedigger.html\">gravedigger</a>. You can use the command <c>!check username</c> to check the role of a dead player.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1048,7 +1048,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You dug up ${player.data.gravedigger.target.name}'s corpse and found out they were a ${player.data.gravedigger.target.role.role.seenByOthers}.`,
+						message: `You dug up ${player.data.gravedigger.target.name}'s corpse and found out they were a </a href="roles/${player.data.gravedigger.target.role.role.seenByOthers.split(" ").join("%20")}.html">${player.data.gravedigger.target.role.role.seenByOthers}</a>.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1060,7 +1060,7 @@ const roles = {
 	},
 
 	"lost mason": {
-		description: "You are a lost mason, a member of a secret society who was seperated from the group. Every night, you can try to reunite yourself with your fellow masons.",
+		description: "You are a <a href=\"roles/lost%20mason.html\">lost mason</a>, a member of a secret society who was seperated from the group. Every night, you can try to reunite yourself with your fellow masons.",
 		value: 2,
 
 		role: {
@@ -1189,7 +1189,7 @@ const roles = {
 						action: "recieveMessage",
 						messages: [{
 							sender: "Moderator",
-							message: `You are a lost mason. You can use the command <c>!check username</c> to check if a player is a mason. If they are, you will be able to join your fellow masons tomorrow night.`,
+							message: `You are a <a href=\"roles/lost%20mason.html\">lost mason</a>. You can use the command <c>!check username</c> to check if a player is a mason. If they are, you will be able to join your fellow masons tomorrow night.`,
 							date: new Date(),
 							permission: `user:${player.name}`
 						}]
@@ -1269,7 +1269,7 @@ const roles = {
 	},
 
 	lycan: {
-		description: "You are an ordinary villager. You lack any special power, so you must use your wits to identify and vote to lynch the werewolves plaguing your town.",
+		description: "You are an ordinary <a href=\"roles/villager.html\">villager</a>. You lack any special power, so you must use your wits to identify and vote to lynch the werewolves plaguing your town.",
 		value: -0.5,
 
 		role: {
@@ -1286,7 +1286,7 @@ const roles = {
 	},
 
 	martyr: {
-		description: "You are a martyr. During the night, you can give your life to save the life of another.",
+		description: "You are a <a href=\"roles/martyr.html\">martyr</a>. During the night, you can give your life to save the life of another.",
 		value: 2,
 
 		role: {
@@ -1441,7 +1441,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: 'You are a martyr. You can protect others by using the command <c>!protect username</c>. If someone tries to kill them, you will be killed instead.',
+						message: 'You are a <a href=\"roles/martyr.html\">martyr</a>. You can protect others by using the command <c>!protect username</c>. If someone tries to kill them, you will be killed instead.',
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1453,7 +1453,7 @@ const roles = {
 	},
 
 	mason: {
-		description: "You are a mason, a trusted member of a secret organization that meets at night. At night, you may talk with other masons.",
+		description: "You are a <a href=\"roles/mason.html\">mason</a>, a trusted member of a secret organization that meets at night. At night, you may talk with other masons.",
 		value: 0,
 
 		role: {
@@ -1479,7 +1479,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: 'You are a mason. You can converse with your fellow masons at night.',
+						message: 'You are a <a href=\"roles/mason.html\">mason</a>. You can converse with your fellow masons at night.',
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1489,7 +1489,7 @@ const roles = {
 	},
 
 	"old man": {
-		description: "You are an old man and don't have much time left to live. You will pass away from natural causes in three days, if you are not already dead.",
+		description: "You are an <a href=\"roles/old%20man.html\">old man</a> and don't have much time left to live. You will pass away from natural causes in three days, if you are not already dead.",
 		value: -0.5,
 
 		role: {
@@ -1517,7 +1517,7 @@ const roles = {
 						action: "recieveMessage",
 						messages: [{
 							sender: "Moderator",
-							message: `You are an old man. You have ${player.data["old man"].daysLeft} day${player.data["old man"].daysLeft == 1 ? "" : "s"} left to live.`,
+							message: `You are an <a href=\"roles/old%20man.html\">old man</a>. You have ${player.data["old man"].daysLeft} day${player.data["old man"].daysLeft == 1 ? "" : "s"} left to live.`,
 							date: new Date(),
 							permission: player.chatSendPermission
 						}]
@@ -1532,7 +1532,7 @@ const roles = {
 							action: "recieveMessage",
 							messages: [{
 								sender: "Moderator",
-								message: `You are an old man. You will die of old age tonight.`,
+								message: `You are an <a href=\"roles/old%20man.html\">old man</a>. You will die of old age tonight.`,
 								date: new Date(),
 								permission: player.chatSendPermission
 							}]
@@ -1547,7 +1547,7 @@ const roles = {
 							action: "recieveMessage",
 							messages: [{
 								sender: "Moderator",
-								message: `You are an old man. You have ${player.data["old man"].daysLeft} days left to live.`,
+								message: `You are an <a href=\"roles/old%20man.html\">old man</a>. You have ${player.data["old man"].daysLeft} days left to live.`,
 								date: new Date(),
 								permission: player.chatSendPermission
 							}]
@@ -1559,7 +1559,7 @@ const roles = {
 	},
 
 	protector: {
-		description: "You are a protector. You can protect yourself and others from being killed during the night.",
+		description: "You are a <a href=\"roles/protector.html\">protector</a>. You can protect yourself and others from being killed during the night.",
 		value: 3,
 
 		role: {
@@ -1699,7 +1699,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: 'You are a protector. You protect yourself and others using the command <c>!protect username</c>. You cannot protect the same player two nights in a row.',
+						message: 'You are a <a href=\"roles/protector.html\">protector</a>. You protect yourself and others using the command <c>!protect username</c>. You cannot protect the same player two nights in a row.',
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1711,7 +1711,7 @@ const roles = {
 	},
 
 	seer: {
-		description: "You are a seer, a powerful magician. You can peer into the minds of other players and see their true nature. Be aware, however, that some roles are seen unreliably.",
+		description: "You are a <a href=\"roles/seer.html\">seer</a>, a powerful magician. You can peer into the minds of other players and see their true nature. Be aware, however, that some roles are seen unreliably.",
 		value: 2,
 
 		role: {
@@ -1836,7 +1836,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a seer. You can use the command <c>!check username</c> to check a player's faction.`,
+						message: `You are a <a href=\"roles/seer.html\">seer</a>. You can use the command <c>!check username</c> to check a player's faction.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1865,7 +1865,7 @@ const roles = {
 	},
 
 	"silent wolf": {
-		description: "You are a silent wolf. Like all wolves, you can kill people at night. Unlike other wolves, however, a seer will detect you as a regular villager.",
+		description: "You are a <a href=\"roles/silent%20wolf.html\">silent wolf</a>. Like all wolves, you can kill people at night. Unlike other wolves, however, a seer will detect you as a regular villager.",
 		value: -2,
 
 		role: {
@@ -1898,7 +1898,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a member of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player. The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight.`,
+						message: `You are a <a href=\"roles/silent%20wolf.html\">silent wolf</a>, a member of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player. The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -1928,7 +1928,7 @@ const roles = {
 	},
 
 	traitor: {
-		description: "You are a traitor. The village treated you poorly and now you want to watch it burn to the ground. Every night, you conspire with the wolves, however, you cannot kill like they can.",
+		description: "You are a <a href=\"roles/traitor.html\">traitor</a>. The village treated you poorly and now you want to watch it burn to the ground. Every night, you conspire with the wolves, however, you cannot kill like they can.",
 		value: 0,
 
 		role: {
@@ -1948,7 +1948,7 @@ const roles = {
 	},
 
 	vigilante: {
-		description: "You are a vigilante, a skilled fighter willing to take justice in your own hands. Once per game, you may kill a player at night.",
+		description: "You are a <a href=\"roles/vigilante.html\">vigilante</a>, a skilled fighter willing to take justice in your own hands. Once per game, you may kill a player at night.",
 		value: 0,
 
 		role: {
@@ -2095,7 +2095,7 @@ const roles = {
 						action: "recieveMessage",
 						messages: [{
 							sender: "Moderator",
-							message: `You are a vigilante. You can use the command <c>!kill username</c> to kill a player. This power can only be used once per game. If the player you try to kill is protected, and as a result does not die, you still cannot use this power again.`,
+							message: `You are a <a href=\"roles/vigilante.html\">vigilante</a>. You can use the command <c>!kill username</c> to kill a player. This power can only be used once per game. If the player you try to kill is protected, and as a result does not die, you still cannot use this power again.`,
 							date: new Date(),
 							permission: `user:${player.name}`
 						}]
@@ -2120,7 +2120,7 @@ const roles = {
 	},
 
 	villager: {
-		description: "You are an ordinary villager. You lack any special power, so you must use your wits to identify and kill off the werewolves plaguing your town.",
+		description: "You are an ordinary <a href=\"roles/villager.html\">villager</a>. You lack any special power, so you must use your wits to identify and kill off the werewolves plaguing your town.",
 		value: 0,
 
 		role: {
@@ -2137,7 +2137,7 @@ const roles = {
 	},
 
 	werewolf: {
-		description: "You are a werewolf. During the day, you are like everyone else, but at night, you transform into a bloodthirsty monster and slaughter villagers.",
+		description: "You are a <a href=\"roles/werewolf.html\">werewolf</a>. During the day, you are like everyone else, but at night, you transform into a bloodthirsty monster and slaughter villagers.",
 		value: -1,
 
 		role: {
@@ -2170,7 +2170,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a member of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player. The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight.`,
+						message: `You are a <a href=\"roles/werewolf.html\">werewolf</a>, amember of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player. The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -2205,7 +2205,7 @@ const roles = {
 	},
 
 	"wolf cub": {
-		description: "You are a wolf cub, a young werewolf. Like all other wolves, you can kill villagers. If you are killed, the other wolves are enraged and will be able to kill an extra person the next night.",
+		description: "You are a <a href=\"roles/wolf%20cub.html\">wolf cub</a>, a young werewolf. Like all other wolves, you can kill villagers. If you are killed, the other wolves are enraged and will be able to kill an extra person the next night.",
 		value: -1,
 
 		role: {
@@ -2245,7 +2245,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `You are a member of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player. The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight.`,
+						message: `You are a <a href=\"roles/wolf%20cub.html\">wolf cub</a>, amember of the wolfpack. You, and all other wolves, can use the command <c>!kill username</c> to kill a player. The wolfpack can kill ${player.game.data.wolfpack.killsAllowed} players tonight.`,
 						date: new Date(),
 						permission: `user:${player.name}`
 					}]
@@ -2257,7 +2257,7 @@ const roles = {
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: `${player.name}, your wolf cub, died today. Their death has brought rage to the wolfpack. As a result, you have an extra kill tonight.`,
+						message: `${player.name}, your <a href=\"roles/wolf%20cub.html\">wolf cub</a>, died. Their death has brought rage to the wolfpack. As a result, you have an extra kill tonight.`,
 						date: new Date(),
 						permission: `wolfpack`
 					}]

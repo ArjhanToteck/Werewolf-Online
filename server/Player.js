@@ -67,7 +67,7 @@ function Player(name, game, host = false) {
 			let deathMessage = message;
 
 			if(this.game.settings.revealRolesOnDeath){
-				deathMessage += " Now that they're dead, you examine their corpse and find out they were a " + this.role.role.name + "."
+				deathMessage += ` Now that they're dead, you examine their corpse and find out they were a <a href="roles/${this.role.role.name.split(" ").join("%20")}">${this.role.role.name}</a>.`
 			}
 
 			// makes sure not already dead

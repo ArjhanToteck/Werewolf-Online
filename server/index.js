@@ -254,7 +254,7 @@ function newGame(name) {
 		messages: [{
 			sender: "Moderator",
 			date: new Date(),
-			message: `${player.name} has opened the game room. When you have at least five players, use <c>!start</c> to start the game. Use the <c>!help</c> command for help.`,
+			message: `${player.name} has opened the game room. When you have at least five players, which you can invite by giving them the code "${newGame.code}", use <c>!start</c> to start the game. You can also get more players by making the game public using the command <c>!settings public</c>. The game can be private by using the same command again. Use the <c>!help</c> command for help.`,
 			permission: "village"
 		}]
 	});

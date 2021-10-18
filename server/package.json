@@ -5,6 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "http": "^0.0.1-security",
+    "lodash.clone": "^4.5.0",
+    "lodash.clonedeep": "^4.5.0",
     "websocket": "^1.0.34"
   },
   "devDependencies": {},

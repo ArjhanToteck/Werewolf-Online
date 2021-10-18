@@ -188,7 +188,7 @@ function Game() {
 
 			// puts names of roles into new array
 			for(let i = 0; i < roles.length; i++){
-				alphabetizedRoles.push(roles[i].role.name);
+				alphabetizedRoles.push(`<a href="roles/${roles[i].role.name.split(" ").join("%20")}.html">${roles[i].role.name}</a>`);
 			}
 			
 			// alphabetizes roles list
