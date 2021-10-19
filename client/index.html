@@ -51,6 +51,7 @@
 	<div id="game" style="display:none;" width:100%>
 		<div id="navbar" class="navbar" style="display:none; left: 0px; background-color:#191919;">
 			<span id="navbarText" class="glitch" style="left: 10px;" data-text="Werewolf"> Werewolf &nbsp;</span>
+			<button onclick="leaveGame()">Leave Game</button>
 			<a href="/"><button>Home</button></a>
 			<a href="instructions.html"><button>How to Play</button></a>
 			<a href="credits.html"><button>Credits</button></a>
@@ -258,6 +259,15 @@
 			});
 	}
 
+	function leaveGame(){
+		connection.send(JSON.stringify({
+			password: password,
+			code: gameCode,
+			action: "leaveGame",
+			date: new Date().toUTCString()
+		}));
+	}
+
 	function setUpConnection() {
 		// establishes connection with websocket server
 		connection = new WebSocket(`wss://${server}`);
@@ -352,6 +362,11 @@
 				alert(message.message);
 				document.cookie = `code=; expires=Thu, 25 Dec 1999 12:00:00 UTC; password=; expires=Thu, 25 Dec 1999 12:00:00 UTC`;
 				location.reload();
+				break;
+
+				// alert
+			case "alert":
+				alert(message.message);
 				break;
 		}
 	}
