@@ -186,7 +186,7 @@
 
 				setUpConnection();
 			}).catch(function(error) {
-				if (error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. Try connecting to a different server or checking your internet connection.";
+				if (error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. This means either the Werewolf server is having issues or your internet is.";
 				hostGameError.style.display = "block";
 				hostGameError.innerHTML = "<br>" + error.message;
 			});
@@ -252,7 +252,7 @@
 
 				setUpConnection();
 			}).catch(function(error) {
-				if (error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. Try connecting to a different server or checking your internet connection.";
+				if (error.message == "Failed to fetch") error.message = "There was a problem connecting to the server. This means either the Werewolf server is having issues or your internet is.";
 				joinGameError.style.display = "block";
 				joinGameError.innerHTML = "<br>" + error.message;
 			});
