@@ -588,7 +588,7 @@ function Game() {
 		}
 	}
 
-	this.endGame = function() {
+	this.endGame = function(skipWait = false, alert = true) {
 		// loops through players
 		for (let i = 0; i < this.players.length; i++) {
 			// gives players village chat permission
@@ -602,7 +602,7 @@ function Game() {
 			messages: [{
 				sender: "Moderator",
 				date: new Date().toString(),
-				message: "This game is now over. The game room will automatically close in 10 minutes. Thank you for playing.",
+				message: "This game is now over. The game room will automatically close in 10 minutes. You can leave before then, if you wish, by pressing the \"Leave Game\" button at the top of the screen. Thank you for playing.",
 				permission: "village"
 			}]
 		});
@@ -610,17 +610,19 @@ function Game() {
 		// closes game in five minutes
 		setTimeout(() => {
 			// kicks out players from frontend
-			this.sendMessage({
-				action: "gameClosed",
-				message: "This game was closed since it has been over for 10 minutes. Thank you for playing."
-			});
+			if(alert){
+				this.sendMessage({
+					action: "gameClosed",
+					message: "This game was closed since it has been over for 10 minutes. Thank you for playing."
+				});
+			}
 
 			// clears game data
 			let index = Game.codes.indexOf(this.code);
 			Game.codes.splice(index, 1);
 			Game.games.splice(index, 1);
 			if (Game.publicGames.includes(this)) Game.publicGames.splice(index, 1);
-		}, 600000); // 600000 milliseconds = 10 minutes
+		}, skipWait ? 0 : 600000); // 600000 milliseconds = 10 minutes
 
 
 	}
