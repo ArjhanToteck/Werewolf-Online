@@ -16,7 +16,6 @@ const roles = {
 		},
 
 		onDeathEvent: function(player, killer) {
-			console.log(killer.lynched);
 			// checks if player was killed by vote
 			if (killer.lynched) {
 				// chooses random voter as victom
@@ -1927,6 +1926,45 @@ const roles = {
 		}
 	},
 
+	tanner: {
+		description: "You are a <a href=\"roles/tanner.html\">tanner</a>. The village forces you to skin animals, and you hate it. Unlike other villagers, you win the game if you get voted off and hung. Dying during the night will not result in you winning.",
+		value: 0,
+
+		role: {
+			name: "tanner",
+			seenByOthers: "tanner",
+			seenBySelf: "tanner"
+		},
+
+		faction: {
+			name: "village",
+			seenByOthers: "village",
+			seenBySelf: "village"
+		},
+
+		chatViewPermissions: ["village"],
+		chatSendPermission: "village",
+
+		onDeathEvent: function(player, killer) {
+			// checks if tanner died by lynching
+			if(killer.lynched){
+				// tells players the tanner won
+				player.game.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						message: `${player.name}'s limp corpse hangs from the gallows. Their neck snaps and their lower body drops to the floor like a ragdoll, leaving a severed head swinging on the rope, bearing a twisted smile. You shouldn't have hung them. The game is now over and ${player.name} won since they were a tanner and the village hung them.`,
+						date: new Date(),
+						permission: "village"
+					}]
+				});
+
+				// ends game
+				player.game.endGame();
+			}
+		}
+	},
+
 	traitor: {
 		description: "You are a <a href=\"roles/traitor.html\">traitor</a>. The village treated you poorly and now you want to watch it burn to the ground. Every night, you conspire with the wolves, however, you cannot kill like they can.",
 		value: 0,
@@ -2454,7 +2492,7 @@ function wolfpackKill(message, player) {
 
 function generateRoles(game) {
 	const powerRoles = [roles.avenger, roles.baker, roles.gravedigger, roles.doppelgänger, roles["lost mason"], roles.martyr, roles.mason, roles.protector, roles.seer, roles.vigilante];
-	const negativePowerRoles = [roles.fool, roles["old man"], roles.traitor];
+	const negativePowerRoles = [roles.fool, roles["old man"], roles.traitor, roles.tanner];
 	const wolfRoles = [roles.bloodhound, roles.bloodletter, roles["silent wolf"], roles.werewolf, roles["wolf cub"]];
 	
 	let outputRoles = [];
