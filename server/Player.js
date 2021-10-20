@@ -514,6 +514,22 @@ function Player(name, game, host = false) {
 							return;
 						}
 
+						// checks if self vote
+						if (player == target && !player.game.settings.allowSelfVotes) {
+							player.game.sendMessage({
+								action: "recieveMessage",
+								messages: [{
+									sender: "Moderator",
+									message: `The game settings are set to not allow you to vote for yourself.`,
+									date: new Date(),
+									permission: player.chatSendPermission
+								}]
+							});
+
+							// exits function
+							return;
+						}
+
 						// valid target
 
 						// removes current vote if applicable
@@ -652,7 +668,7 @@ function Player(name, game, host = false) {
 							action: "recieveMessage",
 							messages: [{
 								sender: "Moderator",
-								message: `Settings: <br> &nbsp; - Allow players to join (<c>!settings allowPlayersToJoin</c>): ${player.game.settings.allowPlayersToJoin} <br> &nbsp; - Public (<c>!settings public</c>): ${player.game.settings.public} <br> &nbsp; - Reveal list of roles in game (<c>!settings revealRolesInGame</c>): ${player.game.settings.revealRolesInGame} <br> &nbsp; - Reveal roles of dead players (<c>!settings revealRolesOnDeath</c>): ${player.game.settings.revealRolesOnDeath}`,
+								message: `Settings: <br> &nbsp; - Allow players to join (<c>!settings allowPlayersToJoin</c>): ${player.game.settings.allowPlayersToJoin} <br> &nbsp; - Allow players to vote for themselves (<c>!settings allowSelfVotes</c>): ${player.game.settings.allowSelfVotes} <br> &nbsp; - Public (<c>!settings public</c>): ${player.game.settings.public} <br> &nbsp; - Reveal list of roles in game (<c>!settings revealRolesInGame</c>): ${player.game.settings.revealRolesInGame} <br> &nbsp; - Reveal roles of dead players (<c>!settings revealRolesOnDeath</c>): ${player.game.settings.revealRolesOnDeath}`,
 								date: new Date(),
 								permission: player.chatSendPermission
 							}]
@@ -705,6 +721,45 @@ function Player(name, game, host = false) {
 							messages: [{
 								sender: "Moderator",
 								message: `New players are ${player.game.settings.allowPlayersToJoin ? "now" : "no longer"} able to join the game.`,
+								date: new Date(),
+								permission: player.chatSendPermission
+							}]
+						});
+
+						break;
+
+					// !settings allowSelfVotes command
+					case "!settings allowSelfVotes":
+						// checks if game started
+						if(player.game.inGame){
+							return;
+						}
+
+						// checks if player is host
+						if (player.host == false) {
+							player.game.sendMessage({
+								action: "recieveMessage",
+								messages: [{
+									sender: "Moderator",
+									message: `You need to have host permissions to change game settings.`,
+									date: new Date(),
+									permission: player.chatSendPermission
+								}]
+							});
+
+							return;
+						}
+
+						// valid usage of command
+
+						// sets variable to opposite
+						player.game.settings.allowSelfVotes = !player.game.settings.allowSelfVotes;
+
+						player.game.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								message: `During the game, players will ${player.game.settings.allowSelfVotes ? "be able" : "not be able"} to vote for themselves.`,
 								date: new Date(),
 								permission: player.chatSendPermission
 							}]
