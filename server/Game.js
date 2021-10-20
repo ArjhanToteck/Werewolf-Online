@@ -22,6 +22,7 @@ function Game() {
 	this.votingOpen = false;
 	this.settings = {		
 		allowPlayersToJoin: true,
+		allowSelfVotes: false,
 		public: false,
 		revealRolesInGame: true,
 		revealRolesOnDeath: false
@@ -120,7 +121,7 @@ function Game() {
 			}]
 		});
 
-		// changes day phase in 40 seconds
+		// warns that day phase will change in 30 seconds
 		setTimeout(() => {
 			this.sendMessage({
 				action: "recieveMessage",
@@ -137,7 +138,7 @@ function Game() {
 				this.changeDayPhase();
 			}, 10000); // 10000 milliseconds = 10 seconds
 			
-		}, 40000); // 60000 milliseconds = 40 seconds
+		}, 30000); // 30000 milliseconds = 30 seconds
 	}
 
 	this.assignRoles = function() {
@@ -213,6 +214,7 @@ function Game() {
 		// keeps track of minutes passed
 		var minutesPassed = 0;
 
+		// waits 30 seconds
 		const checkLoop = setInterval(() => {
 			// one more minute has passed
 			minutesPassed += 0.5;
@@ -373,6 +375,11 @@ function Game() {
 
 			// resets votes
 			this.votes = {};
+
+			// stops day/night cycle if game is over (specificially because a tanner would have ended the game if they were lynched)
+			if(this.gameEnded){
+				return;
+			}
 
 			// tells everyone it's night
 			this.sendMessage({
