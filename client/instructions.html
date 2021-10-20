@@ -38,7 +38,6 @@ Each player has a role, many of which grant special abilities to the player. The
 <br>
 <br>
 
-
 <li><a href="roles/avenger.html">Avenger</a></li>
 <li><a href="roles/baker.html">Baker</a></li>
 <li><a href="roles/doppelgänger.html">Doppelgänger</a></li>
@@ -94,19 +93,23 @@ Additional to the commands granted to you at night by your role (see above), you
 </li>
 <br>
 <li>
-	<c>!settings allowPlayersToJoin</c>: this command will toggle whether or not players are currently able to join the game. Cannot be changed once the game has started.
+	<c>!settings allowPlayersToJoin</c>: this command will toggle whether or not players are currently able to join the game. Cannot be changed once the game has started. Defaults to true.
 </li>
 <br>
 <li>
-	<c>!settings public</c>: this command will toggle whether or not the game is shown on the menu as a game that can be joined by anyone. Cannot be changed once the game has started.
+	<c>!settings allowSelfVotes</c>: this command will toggle whether or not players are currently able to join the game. Note that making this true could give it could give any potential <a href="roles/tanner.html">tanners</a> an advantage. Cannot be changed once the game has started. Defaults to false.
 </li>
 <br>
 <li>
-	<c>!settings revealRolesInGame</c>: this command will toggle whether or not the list of roles in the game will be revealed when the game starts. Cannot be changed once the game has started.
+	<c>!settings public</c>: this command will toggle whether or not the game is shown on the menu as a game that can be joined by anyone. Cannot be changed once the game has started. Defaults to false.
 </li>
 <br>
 <li>
-	<c>!settings revealRolesOnDeath</c>: this command will toggle whether or not the moderator will reveal the role of a player when they die. Cannot be changed once the game has started.
+	<c>!settings revealRolesInGame</c>: this command will toggle whether or not the list of roles in the game will be revealed when the game starts. Cannot be changed once the game has started. Defaults to true.
+</li>
+<br>
+<li>
+	<c>!settings revealRolesOnDeath</c>: this command will toggle whether or not the moderator will reveal the role of a player when they die. Cannot be changed once the game has started. Defaults to false.
 </li>
 <br>
 <li>
