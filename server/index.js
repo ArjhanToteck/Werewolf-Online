@@ -16,7 +16,7 @@ let server = http.createServer(function(req, res) {
 		"Content-Type": "text/plain"
 	};
 
-	if (req.method == "POST") {
+	if (true/*req.method == "POST"*/) {
 		// no path
 		if (req.url.split("/").length <= 1) {
 			res.writeHead(404, headers);
@@ -26,6 +26,11 @@ let server = http.createServer(function(req, res) {
 			const action = req.url.split("/")[1].split("?")[0];
 
 			switch (action) {
+				case "getStatus":
+					res.writeHead(200, headers);
+					res.end("Werewolf Online is currently up.");
+				break;
+
 				case "joinGame":
 					if (req.url.includes("name=") && req.url.includes("code=")) {
 
