@@ -322,7 +322,7 @@ function verifyMessage(data) {
 				return true;
 			}
 		}
-
-		return false;
 	}
+
+	return false;
 }
