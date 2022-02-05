@@ -38,12 +38,14 @@ let server = http.createServer(function(req, res) {
 						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).toLowerCase().includes("moderator")) {
 							res.writeHead(403, headers);
 							res.end('Your name may not contain the word "moderator."\n');
+							return;
 						}
 
 						// checks if name is under 3 characters
 						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).length < 3) {
 							res.writeHead(403, headers);
 							res.end("Your name must be at least 3 letters long.\n");
+							return;
 						}
 
 						// checks if name is over 15 characters
@@ -154,7 +156,7 @@ wsServer = new WebSocketServer({
 wsServer.on("request", function(request) {
 	// checks if origin matches
 	if (!!request.origin && request.origin.indexOf(frontend) == -1) {
-		// rejec && ts bad request
+		// rejects bad request
 		request.reject();
 		return;
 	} else {
