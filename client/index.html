@@ -74,10 +74,10 @@
 	let connection;
 
 	// checks if previously saved game
-	if (getCookie("code") != null && getCookie("password") != null) {
+	if (!localStorage.code && !localStorage.password) {
 		// sets data
-		password = getCookie("password");
-		gameCode = getCookie("code");
+		password = localStorage.password;
+		gameCode = localStorage.code;
 
 		// sets up connection
 		setUpConnection();
@@ -161,11 +161,11 @@
 				let parsedData = JSON.parse(data);
 
 				// sets password
-				document.cookie = `password=${parsedData.password}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				localStorage.password = parsedData.password;
 				password = parsedData.password;
 
 				// sets code
-				document.cookie = `code=${parsedData.code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				localStorage.code = parsedData.code;
 				gameCode = parsedData.code;
 
 				// shows game
@@ -228,11 +228,11 @@
 				document.onkeydown = undefined;
 
 				// sets password
-				document.cookie = `password=${data}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				localStorage.password = data;
 				password = data;
 
 				// sets code
-				document.cookie = `code=${code}; expires=Thu, 25 Dec 2999 12:00:00 UTC;`;
+				localStorage.code;
 				gameCode = code;
 
 				// shows game
@@ -360,7 +360,7 @@
 				// game closes
 			case "gameClosed":
 				alert(message.message);
-				document.cookie = `code=; expires=Thu, 25 Dec 1999 12:00:00 UTC; password=; expires=Thu, 25 Dec 1999 12:00:00 UTC`;
+				localStorage.clear();
 				location.reload();
 				break;
 
@@ -369,20 +369,5 @@
 				alert(message.message);
 				break;
 		}
-	}
-
-	function getCookie(name) {
-		var cname = name + "=";
-		var ca = document.cookie.split(';');
-		for (var i = 0; i < ca.length; i++) {
-			var c = ca[i];
-			while (c.charAt(0) == ' ') {
-				c = c.substring(1);
-			}
-			if (c.indexOf(cname) == 0) {
-				return c.substring(cname.length, c.length);
-			}
-		}
-		return undefined;
 	}
 </script>
