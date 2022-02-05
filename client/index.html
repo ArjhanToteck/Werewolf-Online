@@ -74,7 +74,7 @@
 	let connection;
 
 	// checks if previously saved game
-	if (!localStorage.code && !localStorage.password) {
+	if (!!localStorage.code && !!localStorage.password) {
 		// sets data
 		password = localStorage.password;
 		gameCode = localStorage.code;
