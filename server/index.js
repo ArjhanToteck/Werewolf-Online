@@ -11,7 +11,7 @@ let connections = [];
 // opens http server
 let server = http.createServer(function(req, res) {
 	const headers = {
-		"Access-Control-Allow-Origin": "arjhantoteck.netlify.app",
+		"Access-Control-Allow-Origin": "arjhantoteck.vercel.app",
 		"Content-Type": "text/plain"
 	};
 
@@ -29,7 +29,7 @@ wsServer = new WebSocketServer({
 
 wsServer.on("request", function(request) {
 	// checks if origin matches
-	if (request.origin.indexOf("arjhantoteck.netlify.app") == -1) {
+	if (request.origin.indexOf("arjhantoteck.vercel.app") == -1) {
 		// rejects bad request
 		request.reject();
 		return;
