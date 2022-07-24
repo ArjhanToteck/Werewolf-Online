@@ -16,14 +16,16 @@ function Player(name, game, host = false) {
 	this.chatSendPermission = "village";
 	this.nightChatSendPermission = `user:${this.name}`;
 	this.chatViewPermissions = [{
-		name: "village",
-		start: this.game.dateOpened,
-		end: null
-	}, {
-		name: `user:${this.name}`,
-		start: this.game.dateOpened,
-		end: null
-	}];
+			name: "village",
+			start: new Date(0), // early date to see messages sent before joining
+			end: null
+		},
+		{
+			name: `user:${this.name}`,
+			start: new Date(0), // early date to see messages sent before joining
+			end: null
+		}
+	];
 	this.ready = true;
 	this.data = {};
 	this.protection = [];
@@ -34,8 +36,8 @@ function Player(name, game, host = false) {
 	// connections
 	this.connections = [];
 
-	this.leaveGame = function(){
-		if(game.inGame && !game.gameEnded){
+	this.leaveGame = function() {
+		if (game.inGame && !game.gameEnded) {
 			// tells player they can't leave game
 			for (let i = 0; i < this.connections.length; i++) {
 				this.connections[i].sendUTF(JSON.stringify({
@@ -46,7 +48,7 @@ function Player(name, game, host = false) {
 			return;
 		}
 
-		if(this.game.players.length > 1){
+		if (this.game.players.length > 1) {
 			// leaves from frontend
 			for (let i = 0; i < this.connections.length; i++) {
 				this.connections[i].sendUTF(JSON.stringify({
@@ -67,7 +69,7 @@ function Player(name, game, host = false) {
 			});
 
 			// checks if game was host
-			if(this.host){
+			if (this.host) {
 				this.game.players[1].host = true;
 
 				// tells other playes there is a new host
@@ -124,7 +126,7 @@ function Player(name, game, host = false) {
 	}
 
 	// death
-	this.die = function(killer, ignoreProtection = false, message = `${this.name} was found dead in the morning.`) {		
+	this.die = function(killer, ignoreProtection = false, message = `${this.name} was found dead in the morning.`) {
 		// checks if protected
 		if (!ignoreProtection && (typeof(this.protection) == "object" && this.protection.length > 0)) {
 			for (let i = 0; i < this.onProtectEvents.length; i++) {
@@ -133,7 +135,7 @@ function Player(name, game, host = false) {
 		} else {
 			let deathMessage = message;
 
-			if(this.game.settings.revealRolesOnDeath){
+			if (this.game.settings.revealRolesOnDeath) {
 				deathMessage += ` Now that they're dead, you examine their corpse and find out they were a <a href="roles/${this.role.role.name.split(" ").join("%20")}">${this.role.role.name}</a>.`
 			}
 
@@ -172,8 +174,8 @@ function Player(name, game, host = false) {
 	// onMessageEvents
 	this.onMessageEvents = [
 		// leaving game
-		function(message, player){
-			if(message.action == "leaveGame"){
+		function(message, player) {
+			if (message.action == "leaveGame") {
 				player.leaveGame();
 			}
 		},
@@ -272,7 +274,7 @@ function Player(name, game, host = false) {
 							player.onMessageEvents.push(function(message, player) {
 								// makes sure second time being called
 								timesFired++;
-								if(timesFired == 1) return;
+								if (timesFired == 1) return;
 
 								if (message.action == "sendMessage" && !!message.message) {
 									if (message.message == "confirm") {
@@ -391,7 +393,7 @@ function Player(name, game, host = false) {
 							player.onMessageEvents.push(function(message, player) {
 								// makes sure second time being called
 								timesFired++;
-								if(timesFired == 1) return;
+								if (timesFired == 1) return;
 								if (message.action == "sendMessage" && !!message.message) {
 									if (message.message == "confirm") {
 										// sends message confirming kick
@@ -410,8 +412,8 @@ function Player(name, game, host = false) {
 									}
 								}
 
-									// event listener self destructs
-									player.onMessageEvents.splice(index, 1);
+								// event listener self destructs
+								player.onMessageEvents.splice(index, 1);
 							});
 
 						} else {
@@ -440,7 +442,7 @@ function Player(name, game, host = false) {
 
 				// !vote command
 				if (message.message.substring(0, 6) == "!vote ") {
-					if(player.dead){
+					if (player.dead) {
 						player.game.sendMessage({
 							action: "recieveMessage",
 							messages: [{
@@ -454,7 +456,7 @@ function Player(name, game, host = false) {
 						return;
 					}
 
-					if(player.game.votingOpen){
+					if (player.game.votingOpen) {
 						// !vote Moderator easter egg
 						if (message.message == "!vote Moderator") {
 							player.game.sendMessage({
@@ -533,23 +535,26 @@ function Player(name, game, host = false) {
 						// valid target
 
 						// removes current vote if applicable
-						if(!!player.vote){
+						if (!!player.vote) {
 							player.game.votes[player.vote.name].voters.splice(player.game.votes[player.vote.name].voters.indexOf(player, 1));
 						}
 
 						// adds vote
-						if(!player.game.votes[target.name]) player.game.votes[target.name] = {player: target, voters: []};
+						if (!player.game.votes[target.name]) player.game.votes[target.name] = {
+							player: target,
+							voters: []
+						};
 						player.game.votes[target.name].voters.push(player);
 						player.vote = target;
 
 						// gets list of voters
 						var votersList = [];
 
-						for(let i = 0; i < player.game.votes[target.name].voters.length; i++){
+						for (let i = 0; i < player.game.votes[target.name].voters.length; i++) {
 							votersList.push(player.game.votes[target.name].voters[i].name);
 						}
 
-						if(player != target){
+						if (player != target) {
 							player.game.sendMessage({
 								action: "recieveMessage",
 								messages: [{
@@ -662,7 +667,7 @@ function Player(name, game, host = false) {
 						}
 						break;
 
-					// !settings command
+						// !settings command
 					case "!settings":
 						player.game.sendMessage({
 							action: "recieveMessage",
@@ -675,7 +680,7 @@ function Player(name, game, host = false) {
 						});
 
 						// checks if game started
-						if (player.game.inGame){
+						if (player.game.inGame) {
 							player.game.sendMessage({
 								action: "recieveMessage",
 								messages: [{
@@ -686,13 +691,13 @@ function Player(name, game, host = false) {
 								}]
 							});
 						}
-						
+
 						break;
 
-					// !settings allowPlayersToJoin command
+						// !settings allowPlayersToJoin command
 					case "!settings allowPlayersToJoin":
 						// checks if game started
-						if(player.game.inGame){
+						if (player.game.inGame) {
 							return;
 						}
 
@@ -728,10 +733,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-					// !settings allowSelfVotes command
+						// !settings allowSelfVotes command
 					case "!settings allowSelfVotes":
 						// checks if game started
-						if(player.game.inGame){
+						if (player.game.inGame) {
 							return;
 						}
 
@@ -767,10 +772,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-					// !settings public command
+						// !settings public command
 					case "!settings public":
 						// checks if game started
-						if(player.game.inGame){
+						if (player.game.inGame) {
 							return;
 						}
 
@@ -792,13 +797,12 @@ function Player(name, game, host = false) {
 						// valid usage of command
 						let Game = player.game.constructor;
 
-
 						// sets to private
-						if(player.game.settings.public){
+						if (player.game.settings.public) {
 							player.game.settings.public = false;
-							Game.publicGames.splice(Game.publicGames.indexOf(player.game) , 1);
+							Game.publicGames.splice(Game.publicGames.indexOf(player.game), 1);
 
-						// sets to public
+							// sets to public
 						} else {
 							player.game.settings.public = true;
 							Game.publicGames.push(player.game);
@@ -816,10 +820,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-					// !settings revealRolesInGame command
+						// !settings revealRolesInGame command
 					case "!settings revealRolesInGame":
 						// checks if game started
-						if(player.game.inGame){
+						if (player.game.inGame) {
 							return;
 						}
 
@@ -855,10 +859,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-					// !settings revealRolesOnDeath command
+						// !settings revealRolesOnDeath command
 					case "!settings revealRolesOnDeath":
 						// checks if game started
-						if(player.game.inGame){
+						if (player.game.inGame) {
 							return;
 						}
 
@@ -894,10 +898,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-					// !start command
+						// !start command
 					case "!start":
 						if (player.game.inGame == false) {
-							if (player.game.players.length < 5){
+							if (player.game.players.length < 5) {
 								player.game.sendMessage({
 									action: "recieveMessage",
 									messages: [{
@@ -915,10 +919,10 @@ function Player(name, game, host = false) {
 
 					case "!votes":
 						// makes sure voting is open
-						if(!player.game.votingOpen) return;
+						if (!player.game.votingOpen) return;
 
 						// checks if no votes have been cast
-						if (Object.keys(player.game.votes).length == 0){
+						if (Object.keys(player.game.votes).length == 0) {
 							player.game.sendMessage({
 								action: "recieveMessage",
 								messages: [{
@@ -935,14 +939,14 @@ function Player(name, game, host = false) {
 						var votesMessage = "";
 
 						// loops through lynch candidates
-						for(let i = 0; i < Object.keys(player.game.votes).length; i++){
+						for (let i = 0; i < Object.keys(player.game.votes).length; i++) {
 							// adds name of person current lynch candidate
 							votesMessage += `<br> &nbsp; - People who voted for ${Object.keys(player.game.votes)[i]}:`;
 
 							// loops through voters for current lynch candidate
-							for(let j = 0; j < player.game.votes[Object.keys(player.game.votes)[i]].voters.length; j++){
+							for (let j = 0; j < player.game.votes[Object.keys(player.game.votes)[i]].voters.length; j++) {
 								// adds name of current voter
-									votesMessage += `<br> &nbsp; &nbsp; - ${player.game.votes[Object.keys(player.game.votes)[i]].voters[j].name}`;
+								votesMessage += `<br> &nbsp; &nbsp; - ${player.game.votes[Object.keys(player.game.votes)[i]].voters[j].name}`;
 							}
 							votesMessage += "<br>";
 						}
