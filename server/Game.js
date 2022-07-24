@@ -1,974 +1,657 @@
+const Player = require('./Player.js').Player;
 const Roles = require("./Roles.js");
-const Game = require("./Game.js");
+const deepClone = require("lodash.clonedeep");
 
-// player constructor
-function Player(name, game, host = false) {
-	this.name = name.replace(/[\u00A0-\u9999<>\&]/gim, i => {
-		return '&#' + i.charCodeAt(0) + ';'
-	}); // removes HTML from name
-	this.game = game;
-	this.ips = [];
-	this.host = host;
-	this.role = null;
-	this.subfactions = [];
-	this.dead = false;
-	this.vote = null;
-	this.chatSendPermission = "village";
-	this.nightChatSendPermission = `user:${this.name}`;
-	this.chatViewPermissions = [{
-			name: "village",
-			start: this.game.dateOpened,
-			end: null
-		},
-		{
-			name: `user:${this.name}`,
-			start: this.game.dateOpened,
-			end: null
-		}
-	];
-	this.ready = true;
-	this.data = {};
-	this.protection = [];
+// game constructor
 
-	// generates random password for player
-	this.password = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+Game.games = [];
+Game.codes = [];
+Game.publicGames = [];
 
-	// connections
+function Game() {
+	this.constructor = Game;
+	this.dateOpened = new Date();
+	this.day = 1;
+	this.players = [];
+	this.passwords = [];
 	this.connections = [];
+	this.chat = [];
+	this.bannedIps = [];
+	this.inGame = false;
+	this.gameEnded = false;
+	this.votingOpen = false;
+	this.settings = {		
+		allowPlayersToJoin: true,
+		allowSelfVotes: false,
+		public: false,
+		revealRolesInGame: true,
+		revealRolesOnDeath: false
+	}
+	this.votes = {};
+	this.data = {
+		wolfpack: {
+			killsAllowed: 1
+		}
+	};
 
-	this.leaveGame = function() {
-		if (game.inGame && !game.gameEnded) {
-			// tells player they can't leave game
-			for (let i = 0; i < this.connections.length; i++) {
-				this.connections[i].sendUTF(JSON.stringify({
-					action: "alert",
-					message: `You can't leave a game that's already started!`
-				}));
-			}
-			return;
+	this.dayPhase = {
+		phase: null,
+		timeStarted: new Date()
+	};
+
+	// pushes game to static game.games
+	Game.games.push(this);
+
+	// generates code
+	while (!this.code || Game.codes.includes(this.code)) {
+		this.code = Math.round(Math.random() * (999999 - 111111) + 111111);
+		this.code = this.code.toString();
+	}
+
+	// adds code to list
+	Game.codes.push(this.code);
+
+	// join function
+	this.join = function(name) {
+		// checks if players are allowed to join right now
+		if(!this.settings.allowPlayersToJoin){
+			return {
+					failed: true,
+					reason: "This game is not allowing new players to join right now."
+				}
 		}
 
-		if (this.game.players.length > 1) {
-			// leaves from frontend
-			for (let i = 0; i < this.connections.length; i++) {
-				this.connections[i].sendUTF(JSON.stringify({
-					action: "gameClosed",
-					message: `You left the game. ${this.game.gameEnded ? `Thank you for playing.` : `Use the code "${this.game.code}" if you want to join back in.`}`
-				}));
+		// checks if name is taken
+		for (let i = 0; i < this.players.length; i++) {
+			if (this.players[i].name == name) {
+				return {
+					failed: true,
+					reason: "That username is already taken."
+				}
 			}
+		}
 
-			// tells other players they left
-			this.game.sendMessage({
+		// generates player
+		let player = new Player(name, this);
+		player.game = this;
+		this.players.push(player);
+		this.passwords.push(player.password);
+
+		return player;
+	}
+
+	// start game function
+	this.startGame = function(player) {
+		// removes game from public list
+		if (Game.publicGames.includes(this)) Game.publicGames.splice(Game.games.indexOf(this), 1);
+
+		// sets game data
+		this.inGame = true;
+		this.dayPhase = {
+			phase: "day",
+			timeStarted: new Date()
+		};
+
+		this.chat = [];
+		this.sendMessage({
+			action: "clearChat"
+		});
+
+		// tells players game started
+		this.sendMessage({
+			action: "recieveMessage",
+			messages: [{
+				sender: "Moderator",
+				date: new Date().toString(),
+				message: `${player.name} has started the game.`,
+				permission: "village"
+			}]
+		});
+
+		// assigns roles to players
+		this.assignRoles();	
+
+		this.sendMessage({
+			action: "recieveMessage",
+			messages: [{
+				sender: "Moderator",
+				date: new Date().toString(),
+				message: "So this is the part where you get to know eachother and chat like buddies, you know, before you start murdering eachother in cold blood.",
+				permission: "village"
+			}]
+		});
+
+		// warns that day phase will change in 30 seconds
+		setTimeout(() => {
+			this.sendMessage({
 				action: "recieveMessage",
 				messages: [{
 					sender: "Moderator",
-					message: `${this.name} has left the game.`,
-					date: new Date(),
-					permission: this.chatSendPermission
+					date: new Date().toString(),
+					message: "It will soon be " + (this.dayPhase.phase == "day" ? "night" : "day") + "...",
+					permission: "village"
 				}]
 			});
 
-			// checks if game was host
-			if (this.host) {
-				this.game.players[1].host = true;
+			// changes day phase in 10 seconds
+			setTimeout(() => {
+				this.changeDayPhase();
+			}, 10000); // 10000 milliseconds = 10 seconds
+			
+		}, 30000); // 30000 milliseconds = 30 seconds
+	}
 
-				// tells other playes there is a new host
-				this.game.sendMessage({
-					action: "recieveMessage",
-					messages: [{
-						sender: "Moderator",
-						message: `${this.name} used to be host, but since they left, ${this.game.players[1].name} is now host.`,
-						date: new Date(),
-						permission: this.chatSendPermission
-					}]
-				});
+	this.assignRoles = function() {
+		roles = Roles.generateRoles(this);
+
+		// loops through players
+		for (let i = 0; i < this.players.length; i++) {
+			currentRole = deepClone(roles[i]);
+			this.players[i].role = currentRole;
+
+			// checks if role contains chatViewPermissions
+			if (!!currentRole.chatViewPermissions) {
+				// puts together list of chatViewPermissions
+				for (let j = 0; j < currentRole.chatViewPermissions.length; j++) {
+					this.players[i].chatViewPermissions.push({
+						name: currentRole.chatViewPermissions[j],
+						start: new Date(),
+						end: null
+					});
+				}
 			}
 
-			// deletes password from game
-			this.game.passwords.splice(this.game.passwords.indexOf(this.password), 1);
+			// checks if role contains chatSendPermission
+			if (!!currentRole.chatSendPermission) this.players[i].nightChatSendPermission = currentRole.chatSendPermission;
 
-			// deletes player from game
-			this.game.players.splice(this.game.players.indexOf(this), 1);
-		} else {
-			// leaves from frontend
-			for (let i = 0; i < this.connections.length; i++) {
-				this.connections[i].sendUTF(JSON.stringify({
-					action: "gameClosed",
-					message: `You left the game. Since you were the last person in it, the game is now closed.`
-				}));
+			// adds role data to player
+			if (!!currentRole.onMessageEvent) this.players[i].onMessageEvents.push(currentRole.onMessageEvent);
+			if (!!currentRole.onDayEndEvent) this.players[i].onDayEndEvents.push(currentRole.onDayEndEvent);
+			if (!!currentRole.onNightEndEvent) this.players[i].onNightEndEvents.push(currentRole.onNightEndEvent);
+			if (!!currentRole.onDeathEvent) this.players[i].onDeathEvents.push(currentRole.onDeathEvent);
+			if (!!currentRole.subfactions) this.players[i].subfactions = this.players[i].subfactions.concat(currentRole.subfactions);
+
+			// tells player about their role
+			this.players[i].game.sendMessage({
+				action: "recieveMessage",
+				messages: [{
+					sender: "Moderator",
+					message: currentRole.description,
+					date: new Date(),
+					permission: `user:${this.players[i].name}`
+				}]
+			});
+		}
+
+		// checks if roles are set to be revealed
+		if(this.settings.revealRolesInGame){
+			let alphabetizedRoles = [];
+
+			// puts names of roles into new array
+			for(let i = 0; i < roles.length; i++){
+				alphabetizedRoles.push(`<a href="roles/${roles[i].role.name.split(" ").join("%20")}.html">${roles[i].role.name}</a>`);
 			}
+			
+			// alphabetizes roles list
+			alphabetizedRoles.sort();
 
-			// closes game since no players are left in it
-			this.game.endGame(true, false);
+			this.sendMessage({
+				action: "recieveMessage",
+				messages: [{
+					sender: "Moderator",
+					date: new Date().toString(),
+					message: `This game has the following roles: <br> &nbsp; - ${alphabetizedRoles.join("<br> &nbsp; - ")}`,
+					permission: "village"
+				}]
+			});
 		}
 	}
 
-	// kick
-	this.kick = function(ipBan = false) {
-		// kicks player from frontend
-		for (let i = 0; i < this.connections.length; i++) {
-			this.connections[i].sendUTF(JSON.stringify({
-				action: "gameClosed",
-				message: `You were ${ipBan ? "permanently banned" : "kicked"} from the game.`
-			}));
-		}
+	this.waitUntilNextDayPhase = function() {
+		// day phase does not change if game is over
+		if (this.gameEnded) return;
 
-		// IP ban
-		if (ipBan) {
-			this.game.bannedIps = this.game.bannedIps.concat(this.ips);
-		}
+		// keeps track of minutes passed
+		var minutesPassed = 0;
 
-		// deletes password from game
-		this.game.passwords.splice(this.game.passwords.indexOf(this.password), 1);
+		// waits 30 seconds
+		const checkLoop = setInterval(() => {
+			// one more minute has passed
+			minutesPassed += 0.5;
 
-		// deletes player from game
-		this.game.players.splice(this.game.players.indexOf(this), 1);
-	}
+			// checks how many players are ready
+			let livingCount = this.players.length;
+			let readyCount = 0;
 
-	// death
-	this.die = function(killer, ignoreProtection = false, message = `${this.name} was found dead in the morning.`) {
-		// checks if protected
-		if (!ignoreProtection && (typeof(this.protection) == "object" && this.protection.length > 0)) {
-			for (let i = 0; i < this.onProtectEvents.length; i++) {
-				this.onProtectEvents[i]();
+			// day to night
+			if (this.dayPhase.phase == "day") {
+				// loops through players to see how many are ready
+				for (let i = 0; i < this.players.length; i++) {
+					let currentPlayer = this.players[i];
+
+					// does not count dead player
+					if (currentPlayer.dead) {
+						livingCount--;
+						continue;
+					}
+
+					if (!!currentPlayer.vote) {
+						readyCount++;
+					}
+				}
+
+				// night to day
+			} else {
+				// accounts for wolfpack kill
+				livingCount++;
+
+				if (!!this.data.wolfpack.targets && this.data.wolfpack.targets.length != 0) {
+					readyCount++;
+				}
+
+				// loops through players to see how many are ready
+				for (let i = 0; i < this.players.length; i++) {
+					let currentPlayer = this.players[i];
+
+					// does not count dead player
+					if (currentPlayer.dead) {
+						livingCount--;
+						continue;
+					}
+
+					if (currentPlayer.ready) {
+						readyCount++;
+					}
+				}
 			}
-		} else {
-			let deathMessage = message;
 
-			if (this.game.settings.revealRolesOnDeath) {
-				deathMessage += ` Now that they're dead, you examine their corpse and find out they were a <a href="roles/${this.role.role.name.split(" ").join("%20")}">${this.role.role.name}</a>.`
-			}
+			// checks if at least 70% of players are ready or if three minutes have passed
+			if (readyCount / livingCount > 0.7 || minutesPassed >= 4) {
+				clearInterval(checkLoop);
 
-			// makes sure not already dead
-			if (this.dead == false) {
-				this.dead = true;
-				this.chatSendPermission = "dead";
-				this.chatViewPermissions.push({
-					name: "dead",
-					start: new Date(),
-					end: null
-				});
-
-				this.game.sendMessage({
+				this.sendMessage({
 					action: "recieveMessage",
 					messages: [{
 						sender: "Moderator",
-						message: deathMessage,
-						date: new Date(),
+						date: new Date().toString(),
+						message: "It will soon be " + (this.dayPhase.phase == "day" ? "night" : "day") + "...",
 						permission: "village"
 					}]
 				});
 
-				for (let i = 0; i < this.onDeathEvents.length; i++) {
-					this.onDeathEvents[i](this, killer);
+				// changes day phase in 10 seconds
+				setTimeout(() => {
+					this.changeDayPhase();
+				}, 10000); // 10000 milliseconds = 10 seconds
+			}
+		}, 30000); // 30000 milliseconds = 30 seconds
+	};
+
+	this.changeDayPhase = function(ignoreNextCycle = false) {		
+		// day phase does not change if game is over
+		if (this.gameEnded) return;
+
+		// checks if day
+		if (this.dayPhase.phase == "day") {
+			// makes it night
+			this.dayPhase = {
+				phase: "night",
+				timeStarted: new Date()
+			};
+
+			// closes voting
+			this.votingOpen = false;
+
+			// voting closed on day 1
+			if (this.day != 1) {
+				// gets voting results
+				let victim = null;
+
+				for (let i = 0; i < Object.keys(this.votes).length; i++) {
+					let currentVote = this.votes[Object.keys(this.votes)[i]];
+					if (!victim) {
+						victim = currentVote;
+						continue;
+					}
+
+					// only changes tie if vote is higher
+					if (victim.tied) {
+						if (currentVote.voters.length > victim.votes) {
+							victim = currentVote;
+							continue;
+						}
+					}
+
+					// creates tie if votes are equal in number
+					if (currentVote.voters.length == victim.voters.length) {
+						victim = {
+							tied: true,
+							votes: victim.voters.length,
+							players: [victim.player, currentVote.player]
+						};
+						continue;
+					}
+
+					// replaces victim if there are more votes for currentPlayer
+					if (currentVote.voters.length > victim.voters.length) {
+						victim = currentVote;
+					}
 				}
+
+				// checks if no votes were cast
+				if (victim == null) {
+					// tells village about no lynch
+					this.sendMessage({
+						action: "recieveMessage",
+						messages: [{
+							sender: "Moderator",
+							date: new Date().toString(),
+							message: "You forgot to vote! Now I don't get to watch anyone die! Remember to use <c>!vote username</c> to vote for people to hang.",
+							permission: "village"
+						}]
+					});
+				} else {
+					// checks if votes were tied
+					if (victim.tied) {
+						// tells village about tie
+						this.sendMessage({
+							action: "recieveMessage",
+							messages: [{
+								sender: "Moderator",
+								date: new Date().toString(),
+								message: `The votes were tied between ${victim.players[0].name} and ${victim.players[1].name}. As a result, nobody was lynched today. What a shame.`,
+								permission: "village"
+							}]
+						});
+					} else {
+						// kills player with most votes
+						victim.player.die({
+							lynched: true,
+							voters: victim.voters
+						}, true, `${victim.player.name} was lynched by the village.`);
+					}
+				}
+			}
+
+			// resets votes
+			this.votes = {};
+
+			// stops day/night cycle if game is over (specificially because a tanner would have ended the game if they were lynched)
+			if(this.gameEnded){
+				return;
+			}
+
+			// tells everyone it's night
+			this.sendMessage({
+				action: "recieveMessage",
+				messages: [{
+					sender: "Moderator",
+					date: new Date().toString(),
+					message: "The stars begin to shine as the sky turns black. The town is consumed by the night.",
+					permission: "village"
+				}]
+			});
+
+			// loops through players
+			for (let i = 0; i < this.players.length; i++) {
+				let currentPlayer = this.players[i];
+
+				// resets some data
+				currentPlayer.onProtectEvents = [];
+				currentPlayer.protection = [];
+
+				// checks if dead
+				if (currentPlayer.dead == false) {
+					// this player has a night chat
+					if (!!currentPlayer.nightChatSendPermission) {
+						currentPlayer.chatSendPermission = currentPlayer.nightChatSendPermission;
+					} else {
+						// sets night chat to private chat with moderator for player to use commands and stuff
+						currentPlayer.chatSendPermission = `user:${currentPlayer.name}`;
+					}
+				}
+
+				// loops through dayEndEvents in each player
+				for (let j = 0; j < this.players[i].onDayEndEvents.length; j++) {
+					// sets ready state
+					this.players[i].ready = true;
+
+					// calls each event
+					this.players[i].onDayEndEvents[j](this.players[i]);
+				}
+			}
+			
+				// waits until night
+				if(!ignoreNextCycle) this.waitUntilNextDayPhase();
+		} else {
+			// makes it day
+			this.dayPhase = {
+				phase: "day",
+				timeStarted: new Date()
+			};
+
+			// accounts for new day
+			this.day++;
+
+			// resets some data
+			this.data.wolfpack.killsAllowed = 1;
+
+			// tracks living wolves and villagers
+			let livingWolves = [];
+			let livingNonWolves = [];
+
+			// loops through players
+			for (let i = 0; i < this.players.length; i++) {
+				let currentPlayer = this.players[i];
+
+				// resets vote
+				currentPlayer.vote = null;
+
+				// checks if dead
+				if (currentPlayer.dead == false) {
+					// sets chat permissions for day
+					this.players[i].chatSendPermission = "village";
+				}
+
+				// loops through nightEndEvents in each player
+				for (let j = 0; j < this.players[i].onNightEndEvents.length; j++) {
+					// sets ready state for voters
+					this.players[i].ready = false;
+
+					// calls each event
+					this.players[i].onNightEndEvents[j](this.players[i]);
+				}
+
+				// gets data for win conditions
+				if (!currentPlayer.dead) {
+					if (currentPlayer.role.faction.name == "wolfpack" && currentPlayer.role.name !== "traitor") {
+						livingWolves.push(currentPlayer);
+					} else if (currentPlayer.role.name !== "traitor") {
+						livingNonWolves.push(currentPlayer);
+					}
+				}
+			}
+
+			// extinction
+			if (livingWolves.length == 0 && livingNonWolves.length == 0) {
+				this.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						date: new Date().toString(),
+						message: "The sun rises, red and dim, as if mourning the countless deaths. The villages is completely desolate, save the flies and vultures circling the countless rotting corpses littered throughout the streets. The game is over but nobody survived to win it.",
+						permission: "village"
+					}]
+				});
+
+				this.endGame();
+
+				// wolfpack wins
+			} else if (livingWolves.length >= livingNonWolves.length) {
+				this.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						date: new Date().toString(),
+						message: "Morning arrives, lighting the village and revealing the werewolves that now innhabit it, feeding on the dead villagers. The wolfpack wins.",
+						permission: "village"
+					}]
+				});
+
+				this.endGame();
+
+				// village wins
+			} else if (livingWolves.length == 0 && livingNonWolves.length > 0) {
+				this.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						date: new Date().toString(),
+						message: "A rooster's crow wakes the village, and a quiet morning ensues. The werewolves are completely gone and the town is at peace once more. The village wins.",
+						permission: "village"
+					}]
+				});
+
+				this.endGame();
+
+			} else {
+				// game hasn't ended yet
+
+				// opens voting
+				this.votingOpen = true;
+				this.votes = {};
+
+				// tells players it's morning
+				this.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						date: new Date().toString(),
+						message: "The sun rises in the horizon... it is now morning.",
+						permission: "village"
+					}]
+				});
+
+				// tells players voting is open
+				this.sendMessage({
+					action: "recieveMessage",
+					messages: [{
+						sender: "Moderator",
+						date: new Date().toString(),
+						message: "Voting is open to try and lynch a werewolf. Use the command <c>!vote username</c> to vote to lynch a player. Use the command <c>!votes</c> to see a list of all the votes cast. The player with most votes will be hung to death. If there is a tie, nobody will be hung.",
+						permission: "village"
+					}]
+				});
+
+				// waits until night
+				if(!ignoreNextCycle) this.waitUntilNextDayPhase();
 			}
 		}
 	}
 
-	this.onProtectEvents = [];
-	this.onDeathEvents = [];
-	this.onNightEndEvents = [];
-	this.onDayEndEvents = [];
+	this.sendMessage = function(message) {
+		// adds message to chat list if applicable
+		if (message.action == "recieveMessage") {
+			this.chat = this.chat.concat(message.messages);
+		}
 
-	// onMessageEvents
-	this.onMessageEvents = [
-		// leaving game
-		function(message, player) {
-			if (message.action == "leaveGame") {
-				player.leaveGame();
-			}
-		},
-		// sends message
-		function(message, player) {
-			if (message.action == "sendMessage" && !!message.message) {
-				// changes message action
-				let alteredMessage = {
-					action: "recieveMessage",
-					messages: [{
-						sender: player.name,
-						message: message.message.replace(/[\u00A0-\u9999<>\&]/gim, i => {
-							return '&#' + i.charCodeAt(0) + ';'
-						}), // removes html from message
-						date: new Date(),
-						permission: player.chatSendPermission
-					}]
-				};
+		// loops through all websockets
+		for (let i = 0; i < this.connections.length; i++) {
+			// alteredMessage will not contain inaccessible messages
+			let alteredMessage = deepClone(message);
 
-				// sends altered message
-				player.game.sendMessage(alteredMessage);
-			}
-		},
+			if (message.action == "recieveMessage") {
+				for (let j = 0; j < alteredMessage.messages.length; j++) {
+					// checks if permissions are appropriate for current message
+					let permissionIncluded = false;
 
-		// global commands
-		function(message, player) {
-			if (message.action == "sendMessage" && !!message.message) {
-				// !ban command
-				if (message.message.substring(0, 5) == "!ban ") {
-					// checks if game started
-					if (player.game.inGame == false) {
+					var k = 0;
 
-						// checks if player is host
-						if (player.host) {
-							// !ban Moderator easter egg
-							if (message.message == "!ban Moderator") {
-								player.game.sendMessage({
-									action: "recieveMessage",
-									messages: [{
-										sender: "Moderator",
-										message: "I thought we were friends!",
-										date: new Date(),
-										permission: player.chatSendPermission
-									}]
-								});
-
-								// exits function
-								return;
-							}
-
-							let target = null;
-
-							// loops through players in game
-							for (let i = 0; i < player.game.players.length; i++) {
-								// checks if current player name matches target name
-								if (player.game.players[i].name == message.message.substring(5)) {
-									target = player.game.players[i];
-									break;
-								}
-							}
-
-							// target not found
-							if (target == null) {
-								player.game.sendMessage({
-									action: "recieveMessage",
-									messages: [{
-										sender: "Moderator",
-										message: `There is no player in the game called "${message.message.substring(5)}". Check your spelling or try copy-pasting their name.`,
-										date: new Date(),
-										permission: player.chatSendPermission
-									}]
-								});
-
-								// exits function
-								return;
-							}
-
-							// valid target
-
-							// warns player
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `Are you sure you want to permanently ban ${message.message.substring(5)} out of the game? They will not be able to join back into the game. Bans cannot be reverted. Type <c>confirm</c> to confirm the ban.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// gets index of future onMessage event for self destruction purposes
-							var index = player.onMessageEvents.length;
-							var timesFired = 0;
-
-							// checks for next message to be "confirm"
-							player.onMessageEvents.push(function(message, player) {
-								// makes sure second time being called
-								timesFired++;
-								if (timesFired == 1) return;
-
-								if (message.action == "sendMessage" && !!message.message) {
-									if (message.message == "confirm") {
-										// sends message confirming kick
-										player.game.sendMessage({
-											action: "recieveMessage",
-											messages: [{
-												sender: "Moderator",
-												message: `${target.name} was permanently banned by ${player.name}. Ouch.`,
-												date: new Date(),
-												permission: player.chatSendPermission
-											}]
-										});
-
-										// bans target
-										target.kick(true);
-									}
-
-									// event listener self destructs
-									player.onMessageEvents.splice(index, 1);
-								}
-							})
-
-						} else {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "You can't ban anyone, lol, you dont have host permissions.",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
+					// loops through permissions and checks if they match
+					for (k = 0; k < this.connections[i].player.chatViewPermissions.length; k++) {
+						if (this.connections[i].player.chatViewPermissions[k].name == message.messages[j].permission) {
+							permissionIncluded = true;
+							break;
 						}
-					} else {
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: "The game already started, too late to ban anyone now.",
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
+					}
+
+					// checks if role was had at the time the message was sent
+					if (!permissionIncluded || this.connections[i].player.chatViewPermissions[k].start > message.messages[j].date || (!!this.connections[i].player.chatViewPermissions[k].end && this.connections[i].player.chatViewPermissions[k].end < message.messages[j].date)) {
+						// removes current message
+						alteredMessage.messages.splice(j, 1);
+
+						// subtracts from j to compensate for removed message
+						j--;
 					}
 				}
 
-				// !kick command
-				if (message.message.substring(0, 6) == "!kick ") {
-					// checks if game started
-					if (player.game.inGame == false) {
-
-						// checks if player is host
-						if (player.host) {
-							// !kick Moderator easter egg
-							if (message.message == "!kick Moderator") {
-								player.game.sendMessage({
-									action: "recieveMessage",
-									messages: [{
-										sender: "Moderator",
-										message: "I thought we were friends!",
-										date: new Date(),
-										permission: player.chatSendPermission
-									}]
-								});
-
-								// exits function
-								return;
-							}
-
-							let target = null;
-
-							// loops through players in game
-							for (let i = 0; i < player.game.players.length; i++) {
-								// checks if current player name matches target name
-								if (player.game.players[i].name == message.message.substring(6)) {
-									target = player.game.players[i];
-									break;
-								}
-							}
-
-							// target not found
-							if (target == null) {
-								player.game.sendMessage({
-									action: "recieveMessage",
-									messages: [{
-										sender: "Moderator",
-										message: `There is no player in the game called "${message.message.substring(6)}". Check your spelling or try copy-pasting their name.`,
-										date: new Date(),
-										permission: player.chatSendPermission
-									}]
-								});
-
-								// exits function
-								return;
-							}
-
-							// valid target
-
-							// warns player
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `Are you sure you want to kick ${message.message.substring(6)} out of the game? They will still be able to join back. Type <c>confirm</c> to kick them out.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// gets index of future onMessage event for self destruction purposes
-							var index = player.onMessageEvents.length;
-							var timesFired = 0;
-
-							// checks for next message to be "confirm"
-							player.onMessageEvents.push(function(message, player) {
-								// makes sure second time being called
-								timesFired++;
-								if (timesFired == 1) return;
-								if (message.action == "sendMessage" && !!message.message) {
-									if (message.message == "confirm") {
-										// sends message confirming kick
-										player.game.sendMessage({
-											action: "recieveMessage",
-											messages: [{
-												sender: "Moderator",
-												message: `${target.name} was kicked by ${player.name}.`,
-												date: new Date(),
-												permission: player.chatSendPermission
-											}]
-										});
-
-										// kicks out target
-										target.kick();
-									}
-								}
-
-								// event listener self destructs
-								player.onMessageEvents.splice(index, 1);
-							});
-
-						} else {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "You can't kick anyone out, lmao, you dont have host permissions.",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						}
-					} else {
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: "The game already started, too late to kick anyone out now.",
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-					}
+				// checks if any messages are to be sent
+				if (alteredMessage.messages.length > 0) {
+					this.connections[i].sendUTF(JSON.stringify(alteredMessage));
 				}
-
-				// !vote command
-				if (message.message.substring(0, 6) == "!vote ") {
-					if (player.dead) {
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: "You're dead, lmao.",
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						return;
-					}
-
-					if (player.game.votingOpen) {
-						// !vote Moderator easter egg
-						if (message.message == "!vote Moderator") {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "What's wrong with you! I'm the moderator, an all-powerful being who doesn't even have a neck to be hung by!",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// exits function
-							return;
-						}
-
-						let target = null;
-
-						// loops through players in game
-						for (let i = 0; i < player.game.players.length; i++) {
-							// checks if current player name matches target name
-							if (player.game.players[i].name == message.message.substring(6)) {
-								target = player.game.players[i];
-								break;
-							}
-						}
-
-						// target not found
-						if (target == null) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `There is no player in the game called "${message.message.substring(6)}". Check your spelling or try copy-pasting their name.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// exits function
-							return;
-						}
-
-						// dead target
-						if (target.dead) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `Who's gonna tell ${player.name} that ${target.name} is dead?`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// exits function
-							return;
-						}
-
-						// checks if self vote
-						if (player == target && !player.game.settings.allowSelfVotes) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `The game settings are set to not allow you to vote for yourself.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							// exits function
-							return;
-						}
-
-						// valid target
-
-						// removes current vote if applicable
-						if (!!player.vote) {
-							player.game.votes[player.vote.name].voters.splice(player.game.votes[player.vote.name].voters.indexOf(player, 1));
-						}
-
-						// adds vote
-						if (!player.game.votes[target.name]) player.game.votes[target.name] = {
-							player: target,
-							voters: []
-						};
-						player.game.votes[target.name].voters.push(player);
-						player.vote = target;
-
-						// gets list of voters
-						var votersList = [];
-
-						for (let i = 0; i < player.game.votes[target.name].voters.length; i++) {
-							votersList.push(player.game.votes[target.name].voters[i].name);
-						}
-
-						if (player != target) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `${player.name} is voting to lynch ${target.name}. \n People who voted for ${target.name}: <br> &nbsp; - ${votersList.join("<br> &nbsp; - ")}`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						} else {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `${player.name} is voting to lynch themselves. An interesting move indeed. People who voted for ${target.name}: <br> &nbsp; - ${votersList.join("<br> &nbsp; - ")}`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						}
-					}
-				}
-
-				switch (message.message) {
-					// !players command
-					case "!players":
-						var playersList = [];
-
-						// gets list of player names
-						for (let i = 0; i < player.game.players.length; i++) {
-							playersList.push(player.game.players[i].name);
-						}
-
-						// sends list of player names
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `All players currently in the game: ${playersList.join(", ")}`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-						break;
-
-						// !players alive command
-					case "!players alive":
-						var playersList = [];
-
-						// gets list of living player names
-						for (let i = 0; i < player.game.players.length; i++) {
-							if (player.game.players[i].dead == false) playersList.push(player.game.players[i].name);
-						}
-
-						// checks if any living players are left
-						if (playersList.length != 0) {
-							// sends list of living player names
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `All players in the game that are currently still alive: ${playersList.join(", ")}`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						} else {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `No players in this game are left alive. Wow.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						}
-						break;
-
-					case "!players dead":
-						var playersList = [];
-
-						// gets list of dead player names
-						for (let i = 0; i < player.game.players.length; i++) {
-							if (player.game.players[i].dead) playersList.push(player.game.players[i].name);
-						}
-
-						// checks if any dead players are left
-						if (playersList.length != 0) {
-							// sends list of dead player names
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `All players in the game that are currently dead: ${playersList.join(", ")}`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						} else {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `No players in this game are dead. For now.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						}
-						break;
-
-						// !settings command
-					case "!settings":
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `Settings: <br> &nbsp; - Allow players to join (<c>!settings allowPlayersToJoin</c>): ${player.game.settings.allowPlayersToJoin} <br> &nbsp; - Allow players to vote for themselves (<c>!settings allowSelfVotes</c>): ${player.game.settings.allowSelfVotes} <br> &nbsp; - Public (<c>!settings public</c>): ${player.game.settings.public} <br> &nbsp; - Reveal list of roles in game (<c>!settings revealRolesInGame</c>): ${player.game.settings.revealRolesInGame} <br> &nbsp; - Reveal roles of dead players (<c>!settings revealRolesOnDeath</c>): ${player.game.settings.revealRolesOnDeath}`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						// checks if game started
-						if (player.game.inGame) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: "Note you cannot change these settings anymore since you are in the middle of a game.",
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-						}
-
-						break;
-
-						// !settings allowPlayersToJoin command
-					case "!settings allowPlayersToJoin":
-						// checks if game started
-						if (player.game.inGame) {
-							return;
-						}
-
-						// checks if player is host
-						if (player.host == false) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `You need to have host permissions to change game settings.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							return;
-						}
-
-						// valid usage of command
-
-						// sets variable to opposite
-						player.game.settings.allowPlayersToJoin = !player.game.settings.allowPlayersToJoin;
-
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `New players are ${player.game.settings.allowPlayersToJoin ? "now" : "no longer"} able to join the game.`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						break;
-
-						// !settings allowSelfVotes command
-					case "!settings allowSelfVotes":
-						// checks if game started
-						if (player.game.inGame) {
-							return;
-						}
-
-						// checks if player is host
-						if (player.host == false) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `You need to have host permissions to change game settings.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							return;
-						}
-
-						// valid usage of command
-
-						// sets variable to opposite
-						player.game.settings.allowSelfVotes = !player.game.settings.allowSelfVotes;
-
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `During the game, players will ${player.game.settings.allowSelfVotes ? "be able" : "not be able"} to vote for themselves.`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						break;
-
-						// !settings public command
-					case "!settings public":
-						// checks if game started
-						if (player.game.inGame) {
-							return;
-						}
-
-						// checks if player is host
-						if (player.host == false) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `You need to have host permissions to make the game public.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							return;
-						}
-
-						// valid usage of command
-						let Game = player.game.constructor;
-
-						// sets to private
-						if (player.game.settings.public) {
-							player.game.settings.public = false;
-							Game.publicGames.splice(Game.publicGames.indexOf(player.game), 1);
-
-							// sets to public
-						} else {
-							player.game.settings.public = true;
-							Game.publicGames.push(player.game);
-						}
-
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `The game was now set to ${player.game.settings.public ? "public" : "private"}.`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						break;
-
-						// !settings revealRolesInGame command
-					case "!settings revealRolesInGame":
-						// checks if game started
-						if (player.game.inGame) {
-							return;
-						}
-
-						// checks if player is host
-						if (player.host == false) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `You need to have host permissions to change game settings.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							return;
-						}
-
-						// valid usage of command
-
-						// sets variable to opposite
-						player.game.settings.revealRolesInGame = !player.game.settings.revealRolesInGame;
-
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `A list of roles ${player.game.settings.revealRolesInGame ? "will" : "will not"} be shown once the game starts.`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						break;
-
-						// !settings revealRolesOnDeath command
-					case "!settings revealRolesOnDeath":
-						// checks if game started
-						if (player.game.inGame) {
-							return;
-						}
-
-						// checks if player is host
-						if (player.host == false) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `You need to have host permissions to change game settings.`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							return;
-						}
-
-						// valid usage of command
-
-						// sets variable to opposite
-						player.game.settings.revealRolesOnDeath = !player.game.settings.revealRolesOnDeath;
-
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `When a player dies in the game, their role ${player.game.settings.revealRolesOnDeath ? "will" : "will not"} be revealed.`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						break;
-
-						// !start command
-					case "!start":
-						if (player.game.inGame == false) {
-							if (player.game.players.length < 5) {
-								player.game.sendMessage({
-									action: "recieveMessage",
-									messages: [{
-										sender: "Moderator",
-										message: `You need at least 5 people to play the game. You currently only have ${player.game.players.length}. You can invite more people to join with the code "${player.game.code}".`,
-										date: new Date(),
-										permission: player.chatSendPermission
-									}]
-								});
-							} else {
-								player.game.startGame(player);
-							}
-						}
-						break;
-
-					case "!votes":
-						// makes sure voting is open
-						if (!player.game.votingOpen) return;
-
-						// checks if no votes have been cast
-						if (Object.keys(player.game.votes).length == 0) {
-							player.game.sendMessage({
-								action: "recieveMessage",
-								messages: [{
-									sender: "Moderator",
-									message: `No votes have been cast for anyone yet. Use <c>!vote</c> to vote to hang somebody! I want to see blood tonight!`,
-									date: new Date(),
-									permission: player.chatSendPermission
-								}]
-							});
-
-							return;
-						}
-
-						var votesMessage = "";
-
-						// loops through lynch candidates
-						for (let i = 0; i < Object.keys(player.game.votes).length; i++) {
-							// adds name of person current lynch candidate
-							votesMessage += `<br> &nbsp; - People who voted for ${Object.keys(player.game.votes)[i]}:`;
-
-							// loops through voters for current lynch candidate
-							for (let j = 0; j < player.game.votes[Object.keys(player.game.votes)[i]].voters.length; j++) {
-								// adds name of current voter
-								votesMessage += `<br> &nbsp; &nbsp; - ${player.game.votes[Object.keys(player.game.votes)[i]].voters[j].name}`;
-							}
-							votesMessage += "<br>";
-						}
-
-						player.game.sendMessage({
-							action: "recieveMessage",
-							messages: [{
-								sender: "Moderator",
-								message: `A list of all votes: ${votesMessage}`,
-								date: new Date(),
-								permission: player.chatSendPermission
-							}]
-						});
-
-						break;
-				}
+			} else {
+				this.connections[i].sendUTF(JSON.stringify(alteredMessage));
 			}
 		}
-	];
+	}
+
+	this.endGame = function(skipWait = false, alert = true) {
+		// loops through players
+		for (let i = 0; i < this.players.length; i++) {
+			// gives players village chat permission
+			this.players[i].chatSendPermission = "village";
+		}
+
+		this.gameEnded = true;
+
+		this.sendMessage({
+			action: "recieveMessage",
+			messages: [{
+				sender: "Moderator",
+				date: new Date().toString(),
+				message: "This game is now over. The game room will automatically close in 10 minutes. You can leave before then, if you wish, by pressing the \"Leave Game\" button at the top of the screen. Thank you for playing.",
+				permission: "village"
+			}]
+		});
+
+		// closes game in five minutes
+		setTimeout(() => {
+			// kicks out players from frontend
+			if(alert){
+				this.sendMessage({
+					action: "gameClosed",
+					message: "This game was closed since it has been over for 10 minutes. Thank you for playing."
+				});
+			}
+
+			// clears game data
+			let index = Game.codes.indexOf(this.code);
+			Game.codes.splice(index, 1);
+			Game.games.splice(index, 1);
+			if (Game.publicGames.includes(this)) Game.publicGames.splice(index, 1);
+		}, skipWait ? 0 : 600000); // 600000 milliseconds = 10 minutes
+
+
+	}
+
+	// closes game if inactive
+	setTimeout(() => {
+		if (this.inGame == false) {
+			this.sendMessage({
+				action: "gameClosed",
+				message: "This game was closed since it has been open for 15 minutes without starting."
+			});
+
+			// clears game data
+			let index = Game.codes.indexOf(this.code);
+			Game.codes.splice(index, 1);
+			Game.games.splice(index, 1);
+			if (Game.publicGames.includes(this)) Game.publicGames.splice(index, 1);
+		}
+	}, 900000); // 900000 milliseconds = 15 minutes
 }
 
-// exports player constructor
+// exports game constructor
 module.exports = {
-	Player
+	Game
 }
