@@ -186,7 +186,6 @@ wsServer.on("request", function(request) {
 					// adds connection to player
 					player.connections.push(connection);
 					connection.player = player;
-					game.connections.push(connection);
 
 					// adds ip address to player (for ip bans)
 					if(!player.ips.includes(request.socket.remoteAddress)) player.ips.push(request.socket.remoteAddress);
@@ -225,9 +224,6 @@ wsServer.on("request", function(request) {
 
 					// prepares for connection to close
 					connection.on("close", function() {
-						// removes connection from game
-						game.connections = game.connections.splice(game.connections.indexOf(connection), 1);
-
 						// removes connection from player
 						player.connections = player.connections.splice(player.connections.indexOf(connection), 1);
 					});
