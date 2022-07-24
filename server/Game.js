@@ -14,13 +14,13 @@ function Game() {
 	this.day = 1;
 	this.players = [];
 	this.passwords = [];
-	this.connections = [];
 	this.chat = [];
 	this.bannedIps = [];
+	this.connections = [];
 	this.inGame = false;
 	this.gameEnded = false;
 	this.votingOpen = false;
-	this.settings = {		
+	this.settings = {
 		allowPlayersToJoin: true,
 		allowSelfVotes: false,
 		public: false,
@@ -54,11 +54,11 @@ function Game() {
 	// join function
 	this.join = function(name) {
 		// checks if players are allowed to join right now
-		if(!this.settings.allowPlayersToJoin){
+		if (!this.settings.allowPlayersToJoin) {
 			return {
-					failed: true,
-					reason: "This game is not allowing new players to join right now."
-				}
+				failed: true,
+				reason: "This game is not allowing new players to join right now."
+			}
 		}
 
 		// checks if name is taken
@@ -109,17 +109,53 @@ function Game() {
 		});
 
 		// assigns roles to players
-		this.assignRoles();	
+		this.assignRoles();
 
-		this.sendMessage({
-			action: "recieveMessage",
-			messages: [{
-				sender: "Moderator",
-				date: new Date().toString(),
-				message: "So this is the part where you get to know eachother and chat like buddies, you know, before you start murdering eachother in cold blood.",
-				permission: "village"
-			}]
-		});
+		this.sendMessage = function(message) {
+			// adds message to chat list if applicable
+			if (message.action == "recieveMessage") {
+				this.chat = this.chat.concat(message.messages);
+			}
+
+			// loops through all websockets
+			for (let i = 0; i < this.connections.length; i++) {
+				// alteredMessage will not contain inaccessible messages
+				let alteredMessage = deepClone(message);
+
+				if (message.action == "recieveMessage") {
+					for (let j = 0; j < alteredMessage.messages.length; j++) {
+						// checks if permissions are appropriate for current message
+						let permissionIncluded = false;
+
+						var k = 0;
+
+						// loops through permissions and checks if they match
+						for (k = 0; k < this.connections[i].player.chatViewPermissions.length; k++) {
+							if (this.connections[i].player.chatViewPermissions[k].name == message.messages[j].permission) {
+								permissionIncluded = true;
+								break;
+							}
+						}
+
+						// checks if permission was had at the time the message was sent
+						if (!permissionIncluded || this.connections[i].player.chatViewPermissions[k].start > message.messages[j].date || (!!this.connections[i].player.chatViewPermissions[k].end && this.connections[i].player.chatViewPermissions[k].end < message.messages[j].date)) {
+							// removes current message
+							alteredMessage.messages.splice(j, 1);
+
+							// subtracts from j to compensate for removed message
+							j--;
+						}
+					}
+
+					// checks if any messages are to be sent
+					if (alteredMessage.messages.length > 0) {
+						this.connections[i].sendUTF(JSON.stringify(alteredMessage));
+					}
+				} else {
+					this.connections[i].sendUTF(JSON.stringify(alteredMessage));
+				}
+			}
+		}
 
 		// warns that day phase will change in 30 seconds
 		setTimeout(() => {
@@ -137,7 +173,7 @@ function Game() {
 			setTimeout(() => {
 				this.changeDayPhase();
 			}, 10000); // 10000 milliseconds = 10 seconds
-			
+
 		}, 30000); // 30000 milliseconds = 30 seconds
 	}
 
@@ -184,14 +220,14 @@ function Game() {
 		}
 
 		// checks if roles are set to be revealed
-		if(this.settings.revealRolesInGame){
+		if (this.settings.revealRolesInGame) {
 			let alphabetizedRoles = [];
 
 			// puts names of roles into new array
-			for(let i = 0; i < roles.length; i++){
+			for (let i = 0; i < roles.length; i++) {
 				alphabetizedRoles.push(`<a href="roles/${roles[i].role.name.split(" ").join("%20")}.html">${roles[i].role.name}</a>`);
 			}
-			
+
 			// alphabetizes roles list
 			alphabetizedRoles.sort();
 
@@ -287,7 +323,7 @@ function Game() {
 		}, 30000); // 30000 milliseconds = 30 seconds
 	};
 
-	this.changeDayPhase = function(ignoreNextCycle = false) {		
+	this.changeDayPhase = function(ignoreNextCycle = false) {
 		// day phase does not change if game is over
 		if (this.gameEnded) return;
 
@@ -377,7 +413,7 @@ function Game() {
 			this.votes = {};
 
 			// stops day/night cycle if game is over (specificially because a tanner would have ended the game if they were lynched)
-			if(this.gameEnded){
+			if (this.gameEnded) {
 				return;
 			}
 
@@ -420,9 +456,9 @@ function Game() {
 					this.players[i].onDayEndEvents[j](this.players[i]);
 				}
 			}
-			
-				// waits until night
-				if(!ignoreNextCycle) this.waitUntilNextDayPhase();
+
+			// waits until night
+			if (!ignoreNextCycle) this.waitUntilNextDayPhase();
 		} else {
 			// makes it day
 			this.dayPhase = {
@@ -544,7 +580,7 @@ function Game() {
 				});
 
 				// waits until night
-				if(!ignoreNextCycle) this.waitUntilNextDayPhase();
+				if (!ignoreNextCycle) this.waitUntilNextDayPhase();
 			}
 		}
 	}
@@ -555,42 +591,46 @@ function Game() {
 			this.chat = this.chat.concat(message.messages);
 		}
 
-		// loops through all websockets
-		for (let i = 0; i < this.connections.length; i++) {
-			// alteredMessage will not contain inaccessible messages
-			let alteredMessage = deepClone(message);
+		// loops through all players
+		for (let l = 0; l < this.players.length; l++) {
 
-			if (message.action == "recieveMessage") {
-				for (let j = 0; j < alteredMessage.messages.length; j++) {
-					// checks if permissions are appropriate for current message
-					let permissionIncluded = false;
+			// loops through all websockets
+			for (let i = 0; i < this.players[l].connections.length; i++) {
+				// alteredMessage will not contain inaccessible messages
+				let alteredMessage = deepClone(message);
 
-					var k = 0;
+				if (message.action == "recieveMessage") {
+					for (let j = 0; j < alteredMessage.messages.length; j++) {
+						// checks if permissions are appropriate for current message
+						let permissionIncluded = false;
 
-					// loops through permissions and checks if they match
-					for (k = 0; k < this.connections[i].player.chatViewPermissions.length; k++) {
-						if (this.connections[i].player.chatViewPermissions[k].name == message.messages[j].permission) {
-							permissionIncluded = true;
-							break;
+						var k = 0;
+
+						// loops through permissions and checks if they match
+						for (k = 0; k < this.players[l].connections[i].player.chatViewPermissions.length; k++) {
+							if (this.players[l].connections[i].player.chatViewPermissions[k].name == message.messages[j].permission) {
+								permissionIncluded = true;
+								break;
+							}
+						}
+
+						// checks if permission was had at the time the message was sent
+						if (!permissionIncluded || this.players[l].connections[i].player.chatViewPermissions[k].start > message.messages[j].date || (!!this.players[l].connections[i].player.chatViewPermissions[k].end && this.players[l].connections[i].player.chatViewPermissions[k].end < message.messages[j].date)) {
+							// removes current message
+							alteredMessage.messages.splice(j, 1);
+
+							// subtracts from j to compensate for removed message
+							j--;
 						}
 					}
 
-					// checks if role was had at the time the message was sent
-					if (!permissionIncluded || this.connections[i].player.chatViewPermissions[k].start > message.messages[j].date || (!!this.connections[i].player.chatViewPermissions[k].end && this.connections[i].player.chatViewPermissions[k].end < message.messages[j].date)) {
-						// removes current message
-						alteredMessage.messages.splice(j, 1);
-
-						// subtracts from j to compensate for removed message
-						j--;
+					// checks if any messages are to be sent
+					if (alteredMessage.messages.length > 0) {
+						this.players[l].connections[i].sendUTF(JSON.stringify(alteredMessage));
 					}
+				} else {
+					this.players[l].connections[i].sendUTF(JSON.stringify(alteredMessage));
 				}
-
-				// checks if any messages are to be sent
-				if (alteredMessage.messages.length > 0) {
-					this.connections[i].sendUTF(JSON.stringify(alteredMessage));
-				}
-			} else {
-				this.connections[i].sendUTF(JSON.stringify(alteredMessage));
 			}
 		}
 	}
@@ -617,7 +657,7 @@ function Game() {
 		// closes game in five minutes
 		setTimeout(() => {
 			// kicks out players from frontend
-			if(alert){
+			if (alert) {
 				this.sendMessage({
 					action: "gameClosed",
 					message: "This game was closed since it has been over for 10 minutes. Thank you for playing."
@@ -630,7 +670,6 @@ function Game() {
 			Game.games.splice(index, 1);
 			if (Game.publicGames.includes(this)) Game.publicGames.splice(index, 1);
 		}, skipWait ? 0 : 600000); // 600000 milliseconds = 10 minutes
-
 
 	}
 
