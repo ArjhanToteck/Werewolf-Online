@@ -26,12 +26,14 @@ let server = http.createServer(function(req, res) {
 			const action = req.url.split("/")[1].split("?")[0];
 
 			switch (action) {
-				case "getStatus":
+				case "getStatus": {
 					res.writeHead(200, headers);
 					res.end("Werewolf Online is currently up.");
-				break;
+					break;
 
-				case "joinGame":
+				}
+
+				case "joinGame": {
 					if (req.url.includes("name=") && req.url.includes("code=")) {
 
 						// checks if name includes Moderator
@@ -56,7 +58,7 @@ let server = http.createServer(function(req, res) {
 						}
 
 						// checks if name contains non ASCII characters
-						if(/^[\x00-\x7F]*$/.test(decodeURIComponent(req.url.split("name=")[1].split("&")[0])) == false){
+						if (/^[\x00-\x7F]*$/.test(decodeURIComponent(req.url.split("name=")[1].split("&")[0])) == false) {
 							res.writeHead(403, headers);
 							res.end("Your name must only contain ASCII characters (characters on a standard US keyboard).\n");
 							return;
@@ -83,19 +85,23 @@ let server = http.createServer(function(req, res) {
 					}
 					break;
 
-				case "publicGames":
+				}
+
+				case "publicGames": {
 					res.writeHead(200, headers);
 
 					// compiles public games into string
 					var publicGames = [];
-					for(let i = 0; i < Game.publicGames.length; i++){
+					for (let i = 0; i < Game.publicGames.length; i++) {
 						publicGames.push(Game.publicGames[i].code);
 					}
 
 					res.end(`[${publicGames.toString()}]`);
 					break;
 
-				case "startGame":
+				}
+
+				case "startGame": {
 					if (req.url.includes("name=")) {
 						// checks if name includes Moderator
 						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).toLowerCase().includes("moderator")) {
@@ -111,13 +117,13 @@ let server = http.createServer(function(req, res) {
 
 						// checks if name is over 15 characters
 						if (decodeURIComponent(req.url.split("name=")[1].split("&")[0]).length > 15) {
-							res.writeHead(403, headers);	
+							res.writeHead(403, headers);
 							res.end("Your name must be at most 15 characters long.\n");
 							return;
 						}
 
 						// checks if name contains non ASCII characters
-						if(/^[\x00-\x7F]*$/.test(decodeURIComponent(req.url.split("name=")[1].split("&")[0])) == false){
+						if (/^[\x00-\x7F]*$/.test(decodeURIComponent(req.url.split("name=")[1].split("&")[0])) == false) {
 							res.writeHead(403, headers);
 							res.end("Your name must only contain ASCII characters (characters on a standard US keyboard).\n");
 							return;
@@ -129,13 +135,17 @@ let server = http.createServer(function(req, res) {
 					} else {
 						res.end("Name missing\n");
 					}
-					break;				
+					break;
 
-				default:
+				}
+
+				default: {
 					res.writeHead(404, headers);
 
 					res.end("Action invalid\n");
 					break;
+				}
+
 			}
 		}
 	} else {
@@ -168,7 +178,7 @@ wsServer.on("request", function(request) {
 				const message = JSON.parse(data.utf8Data);
 
 				const game = Game.games[Game.codes.indexOf(message.code)];
-				if(game.bannedIps.includes(request.socket.remoteAddress)){
+				if (game.bannedIps.includes(request.socket.remoteAddress)) {
 					connection.sendUTF(JSON.stringify({
 						action: "gameClosed",
 						message: `You were banned from joining ${message.code}.`
@@ -188,12 +198,12 @@ wsServer.on("request", function(request) {
 					connection.player = player;
 
 					// adds ip address to player (for ip bans)
-					if(!player.ips.includes(request.socket.remoteAddress)) player.ips.push(request.socket.remoteAddress);
+					if (!player.ips.includes(request.socket.remoteAddress)) player.ips.push(request.socket.remoteAddress);
 
 					// sends current chat to player
 					let visibleChat = deepClone(game.chat);
 					let removedMessages = 0;
-					
+
 					for (let i = 0; i < game.chat.length; i++) {
 						// checks if permissions are appropriate for current message
 						let permissionIncluded = false;
@@ -201,15 +211,15 @@ wsServer.on("request", function(request) {
 						let j = 0;
 
 						// loops through permissions and checks if they match
-						for(j = 0; j < player.chatViewPermissions.length; j++){
-							if(player.chatViewPermissions[j].name == game.chat[i].permission){
+						for (j = 0; j < player.chatViewPermissions.length; j++) {
+							if (player.chatViewPermissions[j].name == game.chat[i].permission) {
 								permissionIncluded = true;
 								break;
 							}
 						}
 
 						// checks if role was had at the time the message was sent
-						if(!permissionIncluded || player.chatViewPermissions[j].start > game.chat[i].date || (!!player.chatViewPermissions[j].end && player.chatViewPermissions[j].end < game.chat[i].date)){
+						if (!permissionIncluded || player.chatViewPermissions[j].start > game.chat[i].date || (!!player.chatViewPermissions[j].end && player.chatViewPermissions[j].end < game.chat[i].date)) {
 							// removes current message
 							visibleChat.splice(i - removedMessages, 1);
 							removedMessages++;
@@ -275,16 +285,16 @@ function joinGame(code, name) {
 
 	// makes sure code is valid
 	if (index == -1) {
-		return {failed: true, reason: "Game not found."};
+		return { failed: true, reason: "Game not found." };
 	} else {
 		// checks if game already started
-		if(Game.games[index].inGame) return {failed: true, reason: "That game already started. It's too late to join now."};
+		if (Game.games[index].inGame) return { failed: true, reason: "That game already started. It's too late to join now." };
 
 		// joins game and returns new player password
 		let player = Game.games[index].join(name);
 
-		if(player.failed == true){
-			return {failed: true, reason: player.reason};
+		if (player.failed == true) {
+			return { failed: true, reason: player.reason };
 		}
 
 		// message that they joined the game

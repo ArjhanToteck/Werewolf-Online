@@ -16,15 +16,15 @@ function Player(name, game, host = false) {
 	this.chatSendPermission = "village";
 	this.nightChatSendPermission = `user:${this.name}`;
 	this.chatViewPermissions = [{
-			name: "village",
-			start: new Date(0), // early date to see messages sent before joining
-			end: null
-		},
-		{
-			name: `user:${this.name}`,
-			start: new Date(0), // early date to see messages sent before joining
-			end: null
-		}
+		name: "village",
+		start: new Date(0), // early date to see messages sent before joining
+		end: null
+	},
+	{
+		name: `user:${this.name}`,
+		start: new Date(0), // early date to see messages sent before joining
+		end: null
+	}
 	];
 	this.ready = true;
 	this.data = {};
@@ -128,7 +128,7 @@ function Player(name, game, host = false) {
 	// death
 	this.die = function(killer, ignoreProtection = false, message = `${this.name} was found dead in the morning.`) {
 		// checks if protected
-		if (!ignoreProtection && (typeof(this.protection) == "object" && this.protection.length > 0)) {
+		if (!ignoreProtection && (typeof (this.protection) == "object" && this.protection.length > 0)) {
 			for (let i = 0; i < this.onProtectEvents.length; i++) {
 				this.onProtectEvents[i]();
 			}
@@ -580,7 +580,7 @@ function Player(name, game, host = false) {
 
 				switch (message.message) {
 					// !players command
-					case "!players":
+					case "!players": {
 						var playersList = [];
 
 						// gets list of player names
@@ -600,8 +600,10 @@ function Player(name, game, host = false) {
 						});
 						break;
 
-						// !players alive command
-					case "!players alive":
+					}
+
+					// !players alive command
+					case "!players alive": {
 						var playersList = [];
 
 						// gets list of living player names
@@ -634,7 +636,9 @@ function Player(name, game, host = false) {
 						}
 						break;
 
-					case "!players dead":
+					}
+
+					case "!players dead": {
 						var playersList = [];
 
 						// gets list of dead player names
@@ -667,8 +671,10 @@ function Player(name, game, host = false) {
 						}
 						break;
 
-						// !settings command
-					case "!settings":
+					}
+
+					// !settings command
+					case "!settings": {
 						player.game.sendMessage({
 							action: "recieveMessage",
 							messages: [{
@@ -694,8 +700,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-						// !settings allowPlayersToJoin command
-					case "!settings allowPlayersToJoin":
+					}
+
+					// !settings allowPlayersToJoin command
+					case "!settings allowPlayersToJoin": {
 						// checks if game started
 						if (player.game.inGame) {
 							return;
@@ -733,8 +741,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-						// !settings allowSelfVotes command
-					case "!settings allowSelfVotes":
+					}
+
+					// !settings allowSelfVotes command
+					case "!settings allowSelfVotes": {
 						// checks if game started
 						if (player.game.inGame) {
 							return;
@@ -772,8 +782,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-						// !settings public command
-					case "!settings public":
+					}
+
+					// !settings public command
+					case "!settings public": {
 						// checks if game started
 						if (player.game.inGame) {
 							return;
@@ -820,8 +832,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-						// !settings revealRolesInGame command
-					case "!settings revealRolesInGame":
+					}
+
+					// !settings revealRolesInGame command
+					case "!settings revealRolesInGame": {
 						// checks if game started
 						if (player.game.inGame) {
 							return;
@@ -859,8 +873,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-						// !settings revealRolesOnDeath command
-					case "!settings revealRolesOnDeath":
+					}
+
+					// !settings revealRolesOnDeath command
+					case "!settings revealRolesOnDeath": {
 						// checks if game started
 						if (player.game.inGame) {
 							return;
@@ -898,8 +914,10 @@ function Player(name, game, host = false) {
 
 						break;
 
-						// !start command
-					case "!start":
+					}
+
+					// !start command
+					case "!start": {
 						if (player.game.inGame == false) {
 							if (player.game.players.length < 5) {
 								player.game.sendMessage({
@@ -917,7 +935,9 @@ function Player(name, game, host = false) {
 						}
 						break;
 
-					case "!votes":
+					}
+
+					case "!votes": {
 						// makes sure voting is open
 						if (!player.game.votingOpen) return;
 
@@ -962,6 +982,8 @@ function Player(name, game, host = false) {
 						});
 
 						break;
+					}
+
 				}
 			}
 		}
